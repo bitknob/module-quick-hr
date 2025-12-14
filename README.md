@@ -275,7 +275,13 @@ All APIs return a standardized response format:
 
 ## License
 
-[Your License Here]
+Copyright (c) 2025 Bitknob Innovation Private Limited. All rights reserved.
+
+This is proprietary software. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without the express written permission of Bitknob Innovation Private Limited.
+
+See [LICENSE](./LICENSE) file for full terms and conditions.
+
+For licensing inquiries, visit: [https://www.bitknob.com/](https://www.bitknob.com/)
 
 ## Support
 
