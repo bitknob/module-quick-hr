@@ -285,5 +285,11 @@ For licensing inquiries, visit: [https://www.bitknob.com/](https://www.bitknob.c
 
 ## Support
 
-For issues and questions, please contact [Your Contact Information]
+For issues, questions, or support, please contact:
+
+**Bitknob Innovation Private Limited**  
+Nagla Ramtal, Mathura, Vrindavan, Uttar Pradesh 281121, India  
+Email: support@bitknob.com  
+Phone: +91 8755276470  
+Website: [https://www.bitknob.com/](https://www.bitknob.com/)
 
