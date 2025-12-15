@@ -11,12 +11,10 @@ import {
   searchEmployees,
   transferEmployee,
 } from '../controllers/employee.controller';
-import { getAuthMiddleware } from '@hrm/common';
+import { getAuthMiddleware, UserRole } from '@hrm/common';
 import { enrichEmployeeContext, checkCompanyAccess, checkEmployeeAccess } from '../middleware/accessControl';
-import { UserRole } from '@hrm/common';
 
 const { authenticate, authorize } = getAuthMiddleware();
-import { UserRole } from '@hrm/common';
 
 const router = Router();
 

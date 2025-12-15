@@ -128,12 +128,6 @@ export const checkEmployeeAccess = () => {
       }
 
       return next(new ForbiddenError('Access denied: Insufficient permissions'));
-
-      if (!hasAccess) {
-        return next(new ForbiddenError('Access denied: Cannot access this employee'));
-      }
-
-      next();
     } catch (error) {
       next(error);
     }
