@@ -30,6 +30,35 @@ CREATE INDEX IF NOT EXISTS idx_users_reset_token ON "Users"("resetPasswordToken"
 CREATE INDEX IF NOT EXISTS idx_users_role ON "Users"(role);
 CREATE INDEX IF NOT EXISTS idx_users_active ON "Users"("isActive");
 
+-- User Devices Table (Mobile Device Registration)
+CREATE TABLE IF NOT EXISTS "UserDevices" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" UUID NOT NULL,
+    "deviceId" VARCHAR(255) NOT NULL,
+    "deviceType" VARCHAR(20) NOT NULL CHECK ("deviceType" IN ('ios', 'android', 'web', 'other')),
+    "deviceName" VARCHAR(255),
+    "deviceModel" VARCHAR(255),
+    "osVersion" VARCHAR(50),
+    "appVersion" VARCHAR(50),
+    "fcmToken" VARCHAR(500),
+    "apnsToken" VARCHAR(500),
+    "isActive" BOOLEAN DEFAULT true,
+    "lastActiveAt" TIMESTAMP,
+    "ipAddress" VARCHAR(45),
+    "userAgent" TEXT,
+    "isPrimary" BOOLEAN DEFAULT false,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_device_user FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE CASCADE,
+    CONSTRAINT uk_device_user_device UNIQUE ("userId", "deviceId")
+);
+
+CREATE INDEX IF NOT EXISTS idx_devices_user_id ON "UserDevices"("userId");
+CREATE INDEX IF NOT EXISTS idx_devices_device_id ON "UserDevices"("deviceId");
+CREATE INDEX IF NOT EXISTS idx_devices_fcm_token ON "UserDevices"("fcmToken");
+CREATE INDEX IF NOT EXISTS idx_devices_active ON "UserDevices"("isActive");
+CREATE INDEX IF NOT EXISTS idx_devices_primary ON "UserDevices"("userId", "isPrimary") WHERE "isPrimary" = true;
+
 -- Companies Table (Multi-Tenant Support)
 CREATE TABLE IF NOT EXISTS "Companies" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -205,6 +234,87 @@ CREATE INDEX IF NOT EXISTS idx_audit_company_id ON "AuditLogs"("companyId");
 CREATE INDEX IF NOT EXISTS idx_audit_user_id ON "AuditLogs"("userId");
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON "AuditLogs"("createdAt" DESC);
 
+-- Approval Requests Table (Generic approval system for all request types)
+CREATE TABLE IF NOT EXISTS "ApprovalRequests" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "companyId" UUID NOT NULL,
+    "requestType" VARCHAR(50) NOT NULL CHECK ("requestType" IN ('leave', 'employee_create', 'employee_update', 'employee_transfer', 'employee_promotion', 'salary_change', 'department_change', 'other')),
+    "entityType" VARCHAR(50) NOT NULL,
+    "entityId" UUID,
+    "requestedBy" UUID NOT NULL,
+    "requestedFor" UUID,
+    "requestData" JSONB NOT NULL,
+    "currentStep" INTEGER DEFAULT 1,
+    "totalSteps" INTEGER DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'expired')),
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    "expiresAt" TIMESTAMP,
+    "approvedAt" TIMESTAMP,
+    "rejectedAt" TIMESTAMP,
+    "rejectionReason" TEXT,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_approval_company FOREIGN KEY ("companyId") REFERENCES "Companies"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_approval_requested_by FOREIGN KEY ("requestedBy") REFERENCES "Employees"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_approval_requested_for FOREIGN KEY ("requestedFor") REFERENCES "Employees"(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_company_id ON "ApprovalRequests"("companyId");
+CREATE INDEX IF NOT EXISTS idx_approval_request_type ON "ApprovalRequests"("requestType");
+CREATE INDEX IF NOT EXISTS idx_approval_entity ON "ApprovalRequests"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS idx_approval_requested_by ON "ApprovalRequests"("requestedBy");
+CREATE INDEX IF NOT EXISTS idx_approval_status ON "ApprovalRequests"(status);
+CREATE INDEX IF NOT EXISTS idx_approval_created_at ON "ApprovalRequests"("createdAt" DESC);
+
+-- Approval Steps Table (Multi-level approval workflow)
+CREATE TABLE IF NOT EXISTS "ApprovalSteps" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "approvalRequestId" UUID NOT NULL,
+    "stepNumber" INTEGER NOT NULL,
+    "approverId" UUID,
+    "approverRole" VARCHAR(50),
+    "approverType" VARCHAR(20) NOT NULL CHECK ("approverType" IN ('specific_user', 'role_based', 'manager', 'department_head', 'hrbp', 'company_admin')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'skipped')),
+    "approvedAt" TIMESTAMP,
+    "rejectedAt" TIMESTAMP,
+    "rejectionReason" TEXT,
+    "comments" TEXT,
+    "isRequired" BOOLEAN DEFAULT true,
+    "order" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_approval_step_request FOREIGN KEY ("approvalRequestId") REFERENCES "ApprovalRequests"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_approval_step_approver FOREIGN KEY ("approverId") REFERENCES "Employees"(id) ON DELETE SET NULL,
+    CONSTRAINT uk_approval_step_request_order UNIQUE ("approvalRequestId", "order")
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_step_request_id ON "ApprovalSteps"("approvalRequestId");
+CREATE INDEX IF NOT EXISTS idx_approval_step_approver_id ON "ApprovalSteps"("approverId");
+CREATE INDEX IF NOT EXISTS idx_approval_step_status ON "ApprovalSteps"(status);
+CREATE INDEX IF NOT EXISTS idx_approval_step_order ON "ApprovalSteps"("approvalRequestId", "order");
+
+-- Approval History Table (Track all approval actions)
+CREATE TABLE IF NOT EXISTS "ApprovalHistory" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "approvalRequestId" UUID NOT NULL,
+    "approvalStepId" UUID,
+    "action" VARCHAR(20) NOT NULL CHECK ("action" IN ('created', 'approved', 'rejected', 'cancelled', 'expired', 'delegated', 'commented')),
+    "performedBy" UUID NOT NULL,
+    "performedByRole" VARCHAR(50),
+    "comments" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_approval_history_request FOREIGN KEY ("approvalRequestId") REFERENCES "ApprovalRequests"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_approval_history_step FOREIGN KEY ("approvalStepId") REFERENCES "ApprovalSteps"(id) ON DELETE SET NULL,
+    CONSTRAINT fk_approval_history_performed_by FOREIGN KEY ("performedBy") REFERENCES "Employees"(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_history_request_id ON "ApprovalHistory"("approvalRequestId");
+CREATE INDEX IF NOT EXISTS idx_approval_history_step_id ON "ApprovalHistory"("approvalStepId");
+CREATE INDEX IF NOT EXISTS idx_approval_history_performed_by ON "ApprovalHistory"("performedBy");
+CREATE INDEX IF NOT EXISTS idx_approval_history_action ON "ApprovalHistory"("action");
+CREATE INDEX IF NOT EXISTS idx_approval_history_created_at ON "ApprovalHistory"("createdAt" DESC);
+
 -- Function to update updatedAt timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -237,4 +347,13 @@ CREATE TRIGGER update_performance_reviews_updated_at BEFORE UPDATE ON "Performan
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON "Users"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_devices_updated_at BEFORE UPDATE ON "UserDevices"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_approval_requests_updated_at BEFORE UPDATE ON "ApprovalRequests"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_approval_steps_updated_at BEFORE UPDATE ON "ApprovalSteps"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -5,6 +5,7 @@ import { logger, errorHandler, ResponseFormatter } from '@hrm/common';
 import { connectDatabase } from './config/database';
 import { initializeEmailService } from './config/email';
 import authRoutes from './routes/auth.routes';
+import deviceRoutes from './routes/device.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 9401;
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/devices', deviceRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

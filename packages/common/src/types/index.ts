@@ -35,6 +35,58 @@ export enum AttendanceStatus {
   HALF_DAY = 'half_day',
 }
 
+export enum ApprovalRequestType {
+  LEAVE = 'leave',
+  EMPLOYEE_CREATE = 'employee_create',
+  EMPLOYEE_UPDATE = 'employee_update',
+  EMPLOYEE_TRANSFER = 'employee_transfer',
+  EMPLOYEE_PROMOTION = 'employee_promotion',
+  SALARY_CHANGE = 'salary_change',
+  DEPARTMENT_CHANGE = 'department_change',
+  OTHER = 'other',
+}
+
+export enum ApprovalStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
+  EXPIRED = 'expired',
+}
+
+export enum ApprovalPriority {
+  LOW = 'low',
+  NORMAL = 'normal',
+  HIGH = 'high',
+  URGENT = 'urgent',
+}
+
+export enum ApproverType {
+  SPECIFIC_USER = 'specific_user',
+  ROLE_BASED = 'role_based',
+  MANAGER = 'manager',
+  DEPARTMENT_HEAD = 'department_head',
+  HRBP = 'hrbp',
+  COMPANY_ADMIN = 'company_admin',
+}
+
+export enum ApprovalAction {
+  CREATED = 'created',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
+  EXPIRED = 'expired',
+  DELEGATED = 'delegated',
+  COMMENTED = 'commented',
+}
+
+export enum ApprovalStepStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  SKIPPED = 'skipped',
+}
+
 export interface User {
   id: string;
   email: string;
@@ -161,5 +213,83 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export enum DeviceType {
+  IOS = 'ios',
+  ANDROID = 'android',
+  WEB = 'web',
+  OTHER = 'other',
+}
+
+export interface UserDevice {
+  id: string;
+  userId: string;
+  deviceId: string;
+  deviceType: DeviceType;
+  deviceName?: string;
+  deviceModel?: string;
+  osVersion?: string;
+  appVersion?: string;
+  fcmToken?: string;
+  apnsToken?: string;
+  isActive: boolean;
+  lastActiveAt?: Date;
+  ipAddress?: string;
+  userAgent?: string;
+  isPrimary: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  companyId: string;
+  requestType: ApprovalRequestType;
+  entityType: string;
+  entityId?: string;
+  requestedBy: string;
+  requestedFor?: string;
+  requestData: Record<string, any>;
+  currentStep: number;
+  totalSteps: number;
+  status: ApprovalStatus;
+  priority: ApprovalPriority;
+  expiresAt?: Date;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+  rejectionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ApprovalStep {
+  id: string;
+  approvalRequestId: string;
+  stepNumber: number;
+  approverId?: string;
+  approverRole?: string;
+  approverType: ApproverType;
+  status: ApprovalStepStatus;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+  rejectionReason?: string;
+  comments?: string;
+  isRequired: boolean;
+  order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ApprovalHistory {
+  id: string;
+  approvalRequestId: string;
+  approvalStepId?: string;
+  action: ApprovalAction;
+  performedBy: string;
+  performedByRole?: string;
+  comments?: string;
+  metadata?: Record<string, any>;
+  createdAt: Date;
 }
 

@@ -56,6 +56,48 @@ app.use(
   })
 );
 
+app.use(
+  '/api/approvals',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/approvals': '/api/approvals',
+    },
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+      });
+    },
+  })
+);
+
+app.use(
+  '/api/devices',
+  createProxyMiddleware({
+    target: AUTH_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/devices': '/api/devices',
+    },
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${AUTH_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+      });
+    },
+  })
+);
+
 app.get('/health', (req, res) => {
   ResponseFormatter.success(
     res,

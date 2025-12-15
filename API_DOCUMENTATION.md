@@ -92,9 +92,20 @@ curl -X POST http://localhost:9400/api/auth/signup \
 ```json
 {
   "email": "user@example.com",
-  "password": "SecurePass123!"
+  "password": "SecurePass123!",
+  "deviceId": "unique-device-id-12345",
+  "deviceType": "ios",
+  "deviceName": "iPhone 14 Pro",
+  "deviceModel": "iPhone",
+  "osVersion": "17.0",
+  "appVersion": "1.0.0",
+  "fcmToken": "firebase-cloud-messaging-token",
+  "apnsToken": "apple-push-notification-token",
+  "isPrimary": true
 }
 ```
+
+**Note:** All device fields are optional. If provided, the device will be automatically registered.
 
 **Response (200):**
 ```json
@@ -112,7 +123,13 @@ curl -X POST http://localhost:9400/api/auth/signup \
       "emailVerified": true
     },
     "accessToken": "jwt_token",
-    "refreshToken": "refresh_token"
+    "refreshToken": "refresh_token",
+    "device": {
+      "id": "device-uuid",
+      "deviceId": "unique-device-id-12345",
+      "deviceType": "ios",
+      "isPrimary": true
+    }
   }
 }
 ```
@@ -123,7 +140,10 @@ curl -X POST http://localhost:9400/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
-    "password": "SecurePass123!"
+    "password": "SecurePass123!",
+    "deviceId": "unique-device-id-12345",
+    "deviceType": "ios",
+    "deviceName": "iPhone 14 Pro"
   }'
 ```
 
@@ -388,6 +408,626 @@ curl -X POST http://localhost:9400/api/auth/change-password \
   -d '{
     "currentPassword": "OldPass123!",
     "newPassword": "NewPass123!"
+  }'
+```
+
+---
+
+## Device Management Endpoints
+
+Base Path: `/api/devices`
+
+All device endpoints require authentication.
+
+### 1. Register Device
+
+**Method:** `POST`  
+**URL:** `/api/devices/register`  
+**Full URL:** `http://localhost:9400/api/devices/register`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "deviceId": "unique-device-id-12345",
+  "deviceType": "ios",
+  "deviceName": "iPhone 14 Pro",
+  "deviceModel": "iPhone",
+  "osVersion": "17.0",
+  "appVersion": "1.0.0",
+  "fcmToken": "firebase-cloud-messaging-token",
+  "apnsToken": "apple-push-notification-token",
+  "isPrimary": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Device registered successfully",
+    "responseDetail": "Device iPhone 14 Pro has been registered"
+  },
+  "response": {
+    "id": "device-uuid",
+    "userId": "user-uuid",
+    "deviceId": "unique-device-id-12345",
+    "deviceType": "ios",
+    "deviceName": "iPhone 14 Pro",
+    "deviceModel": "iPhone",
+    "osVersion": "17.0",
+    "appVersion": "1.0.0",
+    "fcmToken": "firebase-cloud-messaging-token",
+    "apnsToken": "apple-push-notification-token",
+    "isActive": true,
+    "isPrimary": true,
+    "lastActiveAt": "2025-01-14T10:30:00Z",
+    "createdAt": "2025-01-14T10:30:00Z",
+    "updatedAt": "2025-01-14T10:30:00Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/devices/register \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "deviceId": "unique-device-id-12345",
+    "deviceType": "ios",
+    "deviceName": "iPhone 14 Pro",
+    "fcmToken": "firebase-token"
+  }'
+```
+
+---
+
+### 2. Get All Devices
+
+**Method:** `GET`  
+**URL:** `/api/devices`  
+**Full URL:** `http://localhost:9400/api/devices`  
+**Authentication:** Required
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Devices retrieved successfully",
+    "responseDetail": "Found 2 device(s)"
+  },
+  "response": [
+    {
+      "id": "device-uuid-1",
+      "deviceId": "unique-device-id-12345",
+      "deviceType": "ios",
+      "deviceName": "iPhone 14 Pro",
+      "isPrimary": true,
+      "isActive": true,
+      "lastActiveAt": "2025-01-14T10:30:00Z"
+    },
+    {
+      "id": "device-uuid-2",
+      "deviceId": "unique-device-id-67890",
+      "deviceType": "android",
+      "deviceName": "Samsung Galaxy S23",
+      "isPrimary": false,
+      "isActive": true,
+      "lastActiveAt": "2025-01-13T15:20:00Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/devices \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 3. Get Device by ID
+
+**Method:** `GET`  
+**URL:** `/api/devices/:id`  
+**Full URL:** `http://localhost:9400/api/devices/device-uuid`  
+**Authentication:** Required
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Device retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "device-uuid",
+    "userId": "user-uuid",
+    "deviceId": "unique-device-id-12345",
+    "deviceType": "ios",
+    "deviceName": "iPhone 14 Pro",
+    "deviceModel": "iPhone",
+    "osVersion": "17.0",
+    "appVersion": "1.0.0",
+    "isActive": true,
+    "isPrimary": true,
+    "lastActiveAt": "2025-01-14T10:30:00Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/devices/device-uuid \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 4. Update Device
+
+**Method:** `PUT`  
+**URL:** `/api/devices/:id`  
+**Full URL:** `http://localhost:9400/api/devices/device-uuid`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "fcmToken": "updated-firebase-token",
+  "apnsToken": "updated-apple-token",
+  "deviceName": "iPhone 15 Pro",
+  "isPrimary": true,
+  "isActive": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Device updated successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "device-uuid",
+    "fcmToken": "updated-firebase-token",
+    "apnsToken": "updated-apple-token",
+    "deviceName": "iPhone 15 Pro",
+    "isPrimary": true,
+    "isActive": true
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X PUT http://localhost:9400/api/devices/device-uuid \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fcmToken": "updated-firebase-token",
+    "isPrimary": true
+  }'
+```
+
+---
+
+### 5. Deactivate Device
+
+**Method:** `POST`  
+**URL:** `/api/devices/:id/deactivate`  
+**Full URL:** `http://localhost:9400/api/devices/device-uuid/deactivate`  
+**Authentication:** Required
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Device deactivated successfully",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/devices/device-uuid/deactivate \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 6. Delete Device
+
+**Method:** `DELETE`  
+**URL:** `/api/devices/:id`  
+**Full URL:** `http://localhost:9400/api/devices/device-uuid`  
+**Authentication:** Required
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Device deleted successfully",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+```bash
+curl -X DELETE http://localhost:9400/api/devices/device-uuid \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+## Approval System Endpoints
+
+Base Path: `/api/approvals`
+
+All approval endpoints require authentication and employee context.
+
+### 1. Create Approval Request
+
+**Method:** `POST`  
+**URL:** `/api/approvals`  
+**Full URL:** `http://localhost:9400/api/approvals`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "requestType": "leave",
+  "entityType": "LeaveRequest",
+  "entityId": "leave-request-uuid",
+  "requestedFor": "employee-uuid",
+  "requestData": {
+    "leaveType": "annual",
+    "startDate": "2025-02-01",
+    "endDate": "2025-02-05",
+    "reason": "Family vacation"
+  },
+  "priority": "normal",
+  "expiresAt": "2025-01-31T23:59:59Z",
+  "approvers": [
+    {
+      "approverType": "manager",
+      "isRequired": true
+    },
+    {
+      "approverType": "department_head",
+      "isRequired": true
+    }
+  ]
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Approval request created successfully",
+    "responseDetail": "Approval request uuid has been created and is pending approval"
+  },
+  "response": {
+    "id": "approval-request-uuid",
+    "companyId": "company-uuid",
+    "requestType": "leave",
+    "entityType": "LeaveRequest",
+    "entityId": "leave-request-uuid",
+    "requestedBy": "employee-uuid",
+    "requestedFor": "employee-uuid",
+    "requestData": {
+      "leaveType": "annual",
+      "startDate": "2025-02-01",
+      "endDate": "2025-02-05",
+      "reason": "Family vacation"
+    },
+    "currentStep": 1,
+    "totalSteps": 2,
+    "status": "pending",
+    "priority": "normal",
+    "createdAt": "2025-01-14T10:30:00Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/approvals \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestType": "leave",
+    "entityType": "LeaveRequest",
+    "requestData": {
+      "leaveType": "annual",
+      "startDate": "2025-02-01",
+      "endDate": "2025-02-05"
+    }
+  }'
+```
+
+---
+
+### 2. Get Approval Request
+
+**Method:** `GET`  
+**URL:** `/api/approvals/:id`  
+**Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid`  
+**Authentication:** Required
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Approval request retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "approval-request-uuid",
+    "requestType": "leave",
+    "status": "pending",
+    "currentStep": 1,
+    "totalSteps": 2,
+    "steps": [
+      {
+        "id": "step-uuid-1",
+        "stepNumber": 1,
+        "approverId": "manager-uuid",
+        "approverType": "manager",
+        "status": "pending",
+        "order": 1
+      },
+      {
+        "id": "step-uuid-2",
+        "stepNumber": 2,
+        "approverId": "dept-head-uuid",
+        "approverType": "department_head",
+        "status": "pending",
+        "order": 2
+      }
+    ],
+    "history": [
+      {
+        "id": "history-uuid",
+        "action": "created",
+        "performedBy": "employee-uuid",
+        "createdAt": "2025-01-14T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 3. Get Approval Requests
+
+**Method:** `GET`  
+**URL:** `/api/approvals`  
+**Full URL:** `http://localhost:9400/api/approvals?page=1&limit=10&status=pending`  
+**Authentication:** Required
+
+**Query Parameters:**
+- `page` (number, optional) - Page number (default: 1)
+- `limit` (number, optional) - Items per page (default: 10)
+- `requestType` (string, optional) - Filter by request type (leave, employee_create, etc.)
+- `status` (string, optional) - Filter by status (pending, approved, rejected, etc.)
+- `requestedBy` (string, optional) - Filter by requester UUID
+- `requestedFor` (string, optional) - Filter by target employee UUID
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Approval requests retrieved successfully",
+    "responseDetail": "Total: 15, Page: 1, Limit: 10, Total Pages: 2"
+  },
+  "response": [
+    {
+      "id": "approval-request-uuid-1",
+      "requestType": "leave",
+      "status": "pending",
+      "priority": "normal",
+      "requestedBy": "employee-uuid",
+      "createdAt": "2025-01-14T10:30:00Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET "http://localhost:9400/api/approvals?page=1&limit=10&status=pending" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 4. Get Pending Approvals
+
+**Method:** `GET`  
+**URL:** `/api/approvals/pending`  
+**Full URL:** `http://localhost:9400/api/approvals/pending`  
+**Authentication:** Required
+
+Returns all approval requests pending action from the current user.
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Pending approvals retrieved successfully",
+    "responseDetail": "Found 3 pending approval(s)"
+  },
+  "response": [
+    {
+      "id": "approval-request-uuid",
+      "requestType": "leave",
+      "status": "pending",
+      "currentStep": 1,
+      "requestedBy": "employee-uuid",
+      "createdAt": "2025-01-14T10:30:00Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/approvals/pending \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 5. Approve Request
+
+**Method:** `POST`  
+**URL:** `/api/approvals/:id/approve`  
+**Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/approve`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "comments": "Approved. Enjoy your vacation!"
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Request approved successfully",
+    "responseDetail": "Approval request approval-request-uuid has been approved"
+  },
+  "response": {
+    "id": "approval-request-uuid",
+    "status": "approved",
+    "currentStep": 2,
+    "approvedAt": "2025-01-14T11:00:00Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comments": "Approved. Enjoy your vacation!"
+  }'
+```
+
+---
+
+### 6. Reject Request
+
+**Method:** `POST`  
+**URL:** `/api/approvals/:id/reject`  
+**Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/reject`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "rejectionReason": "Insufficient leave balance",
+  "comments": "You have only 2 days of leave remaining."
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Request rejected successfully",
+    "responseDetail": "Approval request approval-request-uuid has been rejected: Insufficient leave balance"
+  },
+  "response": {
+    "id": "approval-request-uuid",
+    "status": "rejected",
+    "rejectedAt": "2025-01-14T11:00:00Z",
+    "rejectionReason": "Insufficient leave balance"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rejectionReason": "Insufficient leave balance",
+    "comments": "You have only 2 days of leave remaining."
+  }'
+```
+
+---
+
+### 7. Cancel Request
+
+**Method:** `POST`  
+**URL:** `/api/approvals/:id/cancel`  
+**Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/cancel`  
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "reason": "No longer needed"
+}
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Request cancelled successfully",
+    "responseDetail": "Approval request approval-request-uuid has been cancelled"
+  },
+  "response": {
+    "id": "approval-request-uuid",
+    "status": "cancelled"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/cancel \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "No longer needed"
   }'
 ```
 
@@ -949,6 +1589,39 @@ All errors follow the standard response format:
 - All dates are in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ)
 - UUIDs are used for all IDs
 - Pagination starts at page 1
-- Default limit is 20 items per page
+- Default limit is 20 items per page (10 for approvals)
 - All timestamps are in UTC
+
+### Device Types
+
+- `ios` - iOS devices (iPhone, iPad)
+- `android` - Android devices
+- `web` - Web browsers
+- `other` - Other device types
+
+### Approval Request Types
+
+- `leave` - Leave requests
+- `employee_create` - New employee creation
+- `employee_update` - Employee information updates
+- `employee_transfer` - Employee transfers
+- `employee_promotion` - Employee promotions
+- `salary_change` - Salary modifications
+- `department_change` - Department transfers
+- `other` - Other request types
+
+### Approval Status
+
+- `pending` - Awaiting approval
+- `approved` - Approved by all required approvers
+- `rejected` - Rejected by an approver
+- `cancelled` - Cancelled by requester
+- `expired` - Expired before approval
+
+### Approval Priority
+
+- `low` - Low priority
+- `normal` - Normal priority (default)
+- `high` - High priority
+- `urgent` - Urgent priority
 

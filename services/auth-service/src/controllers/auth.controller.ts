@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
-import { UserRole, ValidationError, ResponseFormatter } from '@hrm/common';
+import { DeviceService } from '../services/device.service';
+import { UserRole, ValidationError, ResponseFormatter, DeviceType } from '@hrm/common';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, JWTPayload } from '../config/jwt';
 import { User } from '../models/User.model';
 import { z } from 'zod';
@@ -18,6 +19,15 @@ const signupSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+  deviceId: z.string().optional(),
+  deviceType: z.nativeEnum(DeviceType).optional(),
+  deviceName: z.string().optional(),
+  deviceModel: z.string().optional(),
+  osVersion: z.string().optional(),
+  appVersion: z.string().optional(),
+  fcmToken: z.string().optional(),
+  apnsToken: z.string().optional(),
+  isPrimary: z.boolean().optional(),
 });
 
 const resetPasswordSchema = z.object({
@@ -78,6 +88,30 @@ export const login = async (
     const validatedData = loginSchema.parse(req.body);
     const result = await AuthService.login(validatedData.email, validatedData.password);
 
+    let device = null;
+    if (validatedData.deviceId && validatedData.deviceType) {
+      try {
+        const ipAddress = req.ip || req.socket.remoteAddress || undefined;
+        const userAgent = req.headers['user-agent'] || undefined;
+        device = await DeviceService.registerDevice({
+          userId: result.user.id,
+          deviceId: validatedData.deviceId,
+          deviceType: validatedData.deviceType,
+          deviceName: validatedData.deviceName,
+          deviceModel: validatedData.deviceModel,
+          osVersion: validatedData.osVersion,
+          appVersion: validatedData.appVersion,
+          fcmToken: validatedData.fcmToken,
+          apnsToken: validatedData.apnsToken,
+          isPrimary: validatedData.isPrimary,
+          ipAddress,
+          userAgent,
+        });
+      } catch (deviceError) {
+        console.error('Device registration error:', deviceError);
+      }
+    }
+
     ResponseFormatter.success(
       res,
       {
@@ -89,6 +123,12 @@ export const login = async (
         },
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        device: device ? {
+          id: device.id,
+          deviceId: device.deviceId,
+          deviceType: device.deviceType,
+          isPrimary: device.isPrimary,
+        } : undefined,
       },
       'Login successful'
     );

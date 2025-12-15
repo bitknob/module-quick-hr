@@ -4,6 +4,7 @@ import cors from 'cors';
 import { logger, errorHandler, ResponseFormatter } from '@hrm/common';
 import { connectDatabase } from './config/database';
 import employeeRoutes from './routes/employee.routes';
+import approvalRoutes from './routes/approval.routes';
 import './middleware/auth';
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/employees', employeeRoutes);
+app.use('/api/approvals', approvalRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

@@ -9,6 +9,8 @@ A comprehensive Human Resource Management (HRM) system built with Node.js and Ty
 - **Enterprise Security**: Custom JWT authentication with bcrypt password hashing
 - **Email Verification**: Configurable email service (SendGrid/SMTP) with custom domain support
 - **Organizational Hierarchy**: Self-referential employee hierarchy with cycle detection
+- **Approval Workflow System**: Multi-level approval system for all request types (leave, employee changes, transfers, etc.)
+- **Mobile Device Management**: Device registration, push notification token management, and multi-device support
 - **PostgreSQL Database**: Structured data storage with optimized queries
 - **Standardized API Responses**: Consistent response format across all endpoints
 - **Auto-reload**: Development mode with automatic service restart
@@ -32,6 +34,8 @@ A comprehensive Human Resource Management (HRM) system built with Node.js and Ty
    - Organizational hierarchy management
    - Company-based access control
    - Employee search and filtering
+   - Approval workflow management
+   - Multi-level approval system
 
 ### Shared Packages
 
@@ -186,10 +190,14 @@ module-quick-hr/
 ### PostgreSQL Tables
 
 - `Users` - User accounts and authentication
+- `UserDevices` - Mobile device registration and push notification tokens
 - `Companies` - Multi-tenant company data
 - `Employees` - Employee records with hierarchy
 - `Departments` - Department information
 - `LeaveRequests` - Leave management
+- `ApprovalRequests` - Generic approval requests for all request types
+- `ApprovalSteps` - Multi-level approval workflow steps
+- `ApprovalHistory` - Approval action history and audit trail
 - `Attendance` - Attendance tracking
 - `Payroll` - Payroll records
 - `PerformanceReviews` - Performance reviews
@@ -261,9 +269,34 @@ All APIs return a standardized response format:
 - Role-based access control (RBAC)
 - Company-level data isolation
 - Hierarchy-based access restrictions
+- Device tracking (IP address, user agent)
+- Multi-device management
 - Input validation with Zod
 - SQL injection protection (Sequelize)
 - XSS protection
+
+## Mobile Support
+
+The system includes comprehensive mobile device support:
+
+- **Device Registration**: Automatic device registration on login
+- **Push Notifications**: FCM (Android) and APNS (iOS) token management
+- **Multi-Device Support**: Users can have multiple active devices
+- **Device Management**: View, update, and manage registered devices
+- **Primary Device**: Support for marking primary device
+- **Device Security**: IP address and user agent tracking for security
+
+## Approval System
+
+The system includes a comprehensive approval workflow system:
+
+- **Multi-Level Approvals**: Support for multiple approval steps
+- **Request Types**: Leave, employee changes, transfers, promotions, salary changes, etc.
+- **Flexible Approvers**: Role-based, manager-based, or specific user approvers
+- **Approval History**: Complete audit trail of all approval actions
+- **Status Tracking**: Pending, approved, rejected, cancelled, expired
+- **Priority Levels**: Low, normal, high, urgent
+- **Comments & Rejection Reasons**: Full communication support
 
 ## Contributing
 
