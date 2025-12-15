@@ -1,9 +1,10 @@
 import './config/env';
 import express from 'express';
 import cors from 'cors';
-import { logger, errorHandler, ResponseFormatter } from '@hrm/common';
+import { logger, errorHandler, ResponseFormatter, setRequestLogger, requestLogger } from '@hrm/common';
 import { connectDatabase } from './config/database';
 import { initializeEmailService } from './config/email';
+import { RequestLogModel } from './models/RequestLog.model';
 import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
 
@@ -14,7 +15,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/auth', authRoutes);
+const startServer = async () => {
+  try {
+    await connectDatabase();
+    
+    setRequestLogger(async (log: any) => {
+      try {
+        await RequestLogModel.create(log);
+      } catch (error) {
+        logger.error('Failed to save request log:', error);
+      }
+    }, 'auth-service');
+    
+    app.use(requestLogger);
+    
+    initializeEmailService();
+    
+    app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);
 
 app.get('/health', (req, res) => {
@@ -25,12 +42,8 @@ app.get('/health', (req, res) => {
   );
 });
 
-app.use(errorHandler);
-
-const startServer = async () => {
-  try {
-    await connectDatabase();
-    initializeEmailService();
+    app.use(errorHandler);
+    
     app.listen(PORT, () => {
       logger.info(`Auth Service running on port ${PORT}`);
     });

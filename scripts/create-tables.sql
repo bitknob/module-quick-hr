@@ -234,6 +234,42 @@ CREATE INDEX IF NOT EXISTS idx_audit_company_id ON "AuditLogs"("companyId");
 CREATE INDEX IF NOT EXISTS idx_audit_user_id ON "AuditLogs"("userId");
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON "AuditLogs"("createdAt" DESC);
 
+-- Request Logs Table (for tracking all HTTP requests)
+CREATE TABLE IF NOT EXISTS "RequestLogs" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" UUID,
+    "employeeId" UUID,
+    "companyId" UUID,
+    method VARCHAR(10) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    "path" VARCHAR(500) NOT NULL,
+    "queryParams" JSONB,
+    "requestHeaders" JSONB,
+    "requestBody" JSONB,
+    "responseStatus" INTEGER,
+    "responseBody" JSONB,
+    "responseHeaders" JSONB,
+    "ipAddress" VARCHAR(45),
+    "userAgent" TEXT,
+    "duration" INTEGER,
+    "errorMessage" TEXT,
+    "serviceName" VARCHAR(100),
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_request_log_user FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE SET NULL,
+    CONSTRAINT fk_request_log_employee FOREIGN KEY ("employeeId") REFERENCES "Employees"(id) ON DELETE SET NULL,
+    CONSTRAINT fk_request_log_company FOREIGN KEY ("companyId") REFERENCES "Companies"(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_request_logs_user_id ON "RequestLogs"("userId");
+CREATE INDEX IF NOT EXISTS idx_request_logs_employee_id ON "RequestLogs"("employeeId");
+CREATE INDEX IF NOT EXISTS idx_request_logs_company_id ON "RequestLogs"("companyId");
+CREATE INDEX IF NOT EXISTS idx_request_logs_method ON "RequestLogs"(method);
+CREATE INDEX IF NOT EXISTS idx_request_logs_path ON "RequestLogs"("path");
+CREATE INDEX IF NOT EXISTS idx_request_logs_status ON "RequestLogs"("responseStatus");
+CREATE INDEX IF NOT EXISTS idx_request_logs_service ON "RequestLogs"("serviceName");
+CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON "RequestLogs"("createdAt" DESC);
+CREATE INDEX IF NOT EXISTS idx_request_logs_url ON "RequestLogs"(url);
+
 -- Approval Requests Table (Generic approval system for all request types)
 CREATE TABLE IF NOT EXISTS "ApprovalRequests" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

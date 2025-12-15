@@ -1,8 +1,9 @@
 import './config/env';
 import express from 'express';
 import cors from 'cors';
-import { logger, errorHandler, ResponseFormatter } from '@hrm/common';
+import { logger, errorHandler, ResponseFormatter, setRequestLogger, requestLogger } from '@hrm/common';
 import { connectDatabase } from './config/database';
+import { RequestLogModel } from './models/RequestLog.model';
 import employeeRoutes from './routes/employee.routes';
 import approvalRoutes from './routes/approval.routes';
 import './middleware/auth';
@@ -14,8 +15,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/employees', employeeRoutes);
-app.use('/api/approvals', approvalRoutes);
+const startServer = async () => {
+  try {
+    await connectDatabase();
+    
+    setRequestLogger(async (log: any) => {
+      try {
+        await RequestLogModel.create(log);
+      } catch (error) {
+        logger.error('Failed to save request log:', error);
+      }
+    }, 'employee-service');
+    
+    app.use(requestLogger);
+    
+    app.use('/api/employees', employeeRoutes);
+    app.use('/api/approvals', approvalRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(
@@ -25,11 +40,8 @@ app.get('/health', (req, res) => {
   );
 });
 
-app.use(errorHandler);
-
-const startServer = async () => {
-  try {
-    await connectDatabase();
+    app.use(errorHandler);
+    
     app.listen(PORT, () => {
       logger.info(`Employee Service running on port ${PORT}`);
     });

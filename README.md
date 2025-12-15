@@ -11,6 +11,7 @@ A comprehensive Human Resource Management (HRM) system built with Node.js and Ty
 - **Organizational Hierarchy**: Self-referential employee hierarchy with cycle detection
 - **Approval Workflow System**: Multi-level approval system for all request types (leave, employee changes, transfers, etc.)
 - **Mobile Device Management**: Device registration, push notification token management, and multi-device support
+- **Request Logging**: Comprehensive HTTP request/response logging with automatic data sanitization
 - **PostgreSQL Database**: Structured data storage with optimized queries
 - **Standardized API Responses**: Consistent response format across all endpoints
 - **Auto-reload**: Development mode with automatic service restart
@@ -198,6 +199,7 @@ module-quick-hr/
 - `ApprovalRequests` - Generic approval requests for all request types
 - `ApprovalSteps` - Multi-level approval workflow steps
 - `ApprovalHistory` - Approval action history and audit trail
+- `RequestLogs` - HTTP request/response logging for all API calls
 - `Attendance` - Attendance tracking
 - `Payroll` - Payroll records
 - `PerformanceReviews` - Performance reviews
@@ -297,6 +299,35 @@ The system includes a comprehensive approval workflow system:
 - **Status Tracking**: Pending, approved, rejected, cancelled, expired
 - **Priority Levels**: Low, normal, high, urgent
 - **Comments & Rejection Reasons**: Full communication support
+
+## Request Logging
+
+The system includes comprehensive HTTP request logging:
+
+- **Automatic Logging**: All HTTP requests and responses are automatically logged
+- **Complete Request Data**: Method, URL, path, query params, headers, body
+- **Complete Response Data**: Status code, response body, response headers
+- **User Context**: Automatically captures user ID, employee ID, and company ID
+- **Metadata**: IP address, user agent, request duration, service name
+- **Data Sanitization**: Automatically redacts sensitive data (passwords, tokens, API keys)
+- **Non-Blocking**: Logging doesn't affect request performance
+- **Database Storage**: All logs stored in `RequestLogs` table for analysis and auditing
+
+### What Gets Logged
+
+- **Request Information**: HTTP method, full URL, path, query parameters, headers (sanitized), request body (sanitized)
+- **Response Information**: HTTP status code, response body, response headers
+- **User Context**: User ID (if authenticated), Employee ID (if available), Company ID (if available)
+- **Metadata**: Client IP address, User-Agent, request duration in milliseconds, service name, timestamp
+
+### Security Features
+
+- **Automatic Sanitization**: Sensitive fields are automatically redacted:
+  - Authorization headers
+  - Passwords
+  - Tokens (JWT, refresh tokens, etc.)
+  - API keys
+  - Any field containing "password", "token", "secret", or "key" in the name
 
 ## Contributing
 

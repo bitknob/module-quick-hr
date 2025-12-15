@@ -293,3 +293,25 @@ export interface ApprovalHistory {
   createdAt: Date;
 }
 
+export interface RequestLog {
+  id?: string;
+  userId?: string;
+  employeeId?: string;
+  companyId?: string;
+  method: string;
+  url: string;
+  path: string;
+  queryParams?: Record<string, any>;
+  requestHeaders?: Record<string, any>;
+  requestBody?: Record<string, any>;
+  responseStatus?: number;
+  responseBody?: Record<string, any>;
+  responseHeaders?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  duration?: number;
+  errorMessage?: string;
+  serviceName?: string;
+  createdAt?: Date;
+}
+
