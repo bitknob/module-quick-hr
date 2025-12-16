@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { logger } from '@hrm/common';
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/hrm_db';
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/quick_hr';
 
 export const connectMongoDB = async (): Promise<void> => {
   try {

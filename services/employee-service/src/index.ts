@@ -4,9 +4,9 @@ import cors from 'cors';
 import { logger, errorHandler, ResponseFormatter, setRequestLogger, requestLogger } from '@hrm/common';
 import { connectDatabase } from './config/database';
 import { RequestLogModel } from './models/RequestLog.model';
+import './middleware/auth'; 
 import employeeRoutes from './routes/employee.routes';
 import approvalRoutes from './routes/approval.routes';
-import './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT || process.env.EMPLOYEE_SERVICE_PORT || 9402;

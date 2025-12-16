@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { ApprovalService } from '../services/approval.service';
 import { ResponseFormatter } from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
-import {
-  ApprovalRequestType,
-  ApprovalStatus,
-} from '@hrm/common';
+import { ApprovalRequestType, ApprovalStatus, ApproverType, ApprovalPriority } from '@hrm/common';
 
 const createApprovalRequestSchema = z.object({
   requestType: z.nativeEnum(ApprovalRequestType),
@@ -14,12 +11,12 @@ const createApprovalRequestSchema = z.object({
   entityId: z.string().uuid().optional(),
   requestedFor: z.string().uuid().optional(),
   requestData: z.record(z.any()),
-  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  priority: z.nativeEnum(ApprovalPriority).optional(),
   expiresAt: z.string().datetime().optional(),
   approvers: z
     .array(
       z.object({
-        approverType: z.enum(['specific_user', 'role_based', 'manager', 'department_head', 'hrbp', 'company_admin']),
+        approverType: z.nativeEnum(ApproverType),
         approverId: z.string().uuid().optional(),
         approverRole: z.string().optional(),
         isRequired: z.boolean().optional(),
@@ -251,4 +248,3 @@ export class ApprovalController {
     }
   }
 }
-

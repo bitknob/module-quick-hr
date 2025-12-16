@@ -6,6 +6,7 @@ import {
   ApprovalStepStatus,
   ApprovalAction,
   ApproverType,
+  ApprovalPriority,
   UserRole,
 } from '@hrm/common';
 import { NotFoundError, ValidationError, ForbiddenError } from '@hrm/common';
@@ -18,7 +19,7 @@ export interface CreateApprovalRequestInput {
   requestedBy: string;
   requestedFor?: string;
   requestData: Record<string, any>;
-  priority?: string;
+  priority?: ApprovalPriority;
   expiresAt?: Date;
   approvers?: Array<{
     approverType: ApproverType;
@@ -34,7 +35,7 @@ export class ApprovalService {
 
     const request = await ApprovalQueries.createApprovalRequest({
       ...requestData,
-      priority: input.priority || 'normal',
+      priority: input.priority || ApprovalPriority.NORMAL,
     });
 
     if (approvers && approvers.length > 0) {
@@ -191,7 +192,13 @@ export class ApprovalService {
       rejectionReason
     );
 
-    await ApprovalQueries.updateRequestStatus(requestId, ApprovalStatus.REJECTED, undefined, new Date(), rejectionReason);
+    await ApprovalQueries.updateRequestStatus(
+      requestId,
+      ApprovalStatus.REJECTED,
+      undefined,
+      new Date(),
+      rejectionReason
+    );
 
     await ApprovalQueries.createHistoryEntry({
       approvalRequestId: requestId,
@@ -248,7 +255,12 @@ export class ApprovalService {
     return await ApprovalQueries.findPendingForApprover(approverId, companyId);
   }
 
-  static async cancelRequest(requestId: string, cancelledBy: string, companyId?: string, reason?: string): Promise<any> {
+  static async cancelRequest(
+    requestId: string,
+    cancelledBy: string,
+    companyId?: string,
+    reason?: string
+  ): Promise<any> {
     const request = await ApprovalQueries.findById(requestId, companyId);
     if (!request) {
       throw new NotFoundError('Approval request not found');
@@ -265,4 +277,3 @@ export class ApprovalService {
     return await ApprovalQueries.cancelRequest(requestId, cancelledBy, reason);
   }
 }
-

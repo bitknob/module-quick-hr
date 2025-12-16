@@ -8,6 +8,8 @@ import {
   ApprovalStatus,
   ApprovalStepStatus,
   ApprovalAction,
+  ApprovalPriority,
+  ApproverType,
 } from '@hrm/common';
 
 export class ApprovalQueries {
@@ -19,7 +21,7 @@ export class ApprovalQueries {
     requestedBy: string;
     requestedFor?: string;
     requestData: Record<string, any>;
-    priority?: string;
+    priority?: ApprovalPriority;
     expiresAt?: Date;
   }): Promise<ApprovalRequest> {
     return await ApprovalRequest.create({
@@ -105,7 +107,10 @@ export class ApprovalQueries {
     return { requests: rows, total: count };
   }
 
-  static async findPendingForApprover(approverId: string, companyId?: string): Promise<ApprovalRequest[]> {
+  static async findPendingForApprover(
+    approverId: string,
+    companyId?: string
+  ): Promise<ApprovalRequest[]> {
     const where: any = {
       status: ApprovalStatus.PENDING,
     };
@@ -137,7 +142,7 @@ export class ApprovalQueries {
     stepNumber: number;
     approverId?: string;
     approverRole?: string;
-    approverType: string;
+    approverType: ApproverType;
     isRequired?: boolean;
     order: number;
   }): Promise<ApprovalStep> {
@@ -270,7 +275,11 @@ export class ApprovalQueries {
     });
   }
 
-  static async cancelRequest(requestId: string, cancelledBy: string, reason?: string): Promise<ApprovalRequest> {
+  static async cancelRequest(
+    requestId: string,
+    cancelledBy: string,
+    reason?: string
+  ): Promise<ApprovalRequest> {
     const request = await ApprovalRequest.findByPk(requestId);
     if (!request) {
       throw new Error('Approval request not found');
@@ -290,4 +299,3 @@ export class ApprovalQueries {
     return request;
   }
 }
-

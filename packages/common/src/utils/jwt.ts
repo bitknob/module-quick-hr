@@ -1,9 +1,11 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { UserRole } from '@hrm/common';
+import { UserRole } from '../types';
 
-const JWT_SECRET: string = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET: string =
+  process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
-const JWT_REFRESH_SECRET: string = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
+const JWT_REFRESH_SECRET: string =
+  process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
 const JWT_REFRESH_EXPIRES_IN: string = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
 export interface JWTPayload {
@@ -55,4 +57,3 @@ export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
     throw new Error('Invalid or expired refresh token');
   }
 };
-

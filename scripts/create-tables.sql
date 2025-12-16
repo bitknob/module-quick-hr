@@ -361,6 +361,19 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers to automatically update updatedAt
+-- Drop existing triggers if they exist to make this script idempotent
+DROP TRIGGER IF EXISTS update_companies_updated_at ON "Companies";
+DROP TRIGGER IF EXISTS update_departments_updated_at ON "Departments";
+DROP TRIGGER IF EXISTS update_employees_updated_at ON "Employees";
+DROP TRIGGER IF EXISTS update_leave_requests_updated_at ON "LeaveRequests";
+DROP TRIGGER IF EXISTS update_attendance_updated_at ON "Attendance";
+DROP TRIGGER IF EXISTS update_payroll_updated_at ON "Payroll";
+DROP TRIGGER IF EXISTS update_performance_reviews_updated_at ON "PerformanceReviews";
+DROP TRIGGER IF EXISTS update_users_updated_at ON "Users";
+DROP TRIGGER IF EXISTS update_user_devices_updated_at ON "UserDevices";
+DROP TRIGGER IF EXISTS update_approval_requests_updated_at ON "ApprovalRequests";
+DROP TRIGGER IF EXISTS update_approval_steps_updated_at ON "ApprovalSteps";
+
 CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON "Companies"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

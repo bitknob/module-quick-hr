@@ -12,24 +12,71 @@ const app = express();
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 9401;
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parsing with error handling for aborted requests
+app.use((req, res, next) => {
+  express.json({ limit: '10mb' })(req, res, (err: any) => {
+    if (err && (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET')) {
+      logger.warn('Request aborted during JSON body parsing', { 
+        method: req.method, 
+        url: req.url,
+        error: err.message 
+      });
+      
+      if (!res.headersSent) {
+        return res.status(400).json({
+          success: false,
+          error: 'Request was aborted',
+        });
+      }
+      return;
+    }
+    next(err);
+  });
+});
+
+app.use((req, res, next) => {
+  express.urlencoded({ extended: true, limit: '10mb' })(req, res, (err: any) => {
+    if (err && (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET')) {
+      logger.warn('Request aborted during URL-encoded body parsing', { 
+        method: req.method, 
+        url: req.url,
+        error: err.message 
+      });
+      
+      if (!res.headersSent) {
+        return res.status(400).json({
+          success: false,
+          error: 'Request was aborted',
+        });
+      }
+      return;
+    }
+    next(err);
+  });
+});
 
 const startServer = async () => {
   try {
     await connectDatabase();
     
     setRequestLogger(async (log: any) => {
-      try {
-        await RequestLogModel.create(log);
-      } catch (error) {
+      // Don't await - make logging non-blocking
+      RequestLogModel.create(log).catch((error) => {
         logger.error('Failed to save request log:', error);
-      }
+      });
     }, 'auth-service');
     
     app.use(requestLogger);
     
-    initializeEmailService();
+    // Initialize email service, but don't block server startup if it fails
+    try {
+      initializeEmailService();
+      logger.info('Email service initialized successfully');
+    } catch (error) {
+      logger.warn('Email service initialization failed - emails will not be sent:', error);
+      // Continue server startup even if email service fails
+    }
     
     app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);

@@ -1,11 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../config/database';
-import { Employee } from './Employee.model';
-import { ApprovalRequest } from './ApprovalRequest.model';
-import {
-  ApproverType,
-  ApprovalStepStatus,
-} from '@hrm/common';
+import { ApproverType, ApprovalStepStatus } from '@hrm/common';
 
 export interface ApprovalStepAttributes {
   id: string;
@@ -26,7 +21,10 @@ export interface ApprovalStepAttributes {
 }
 
 export interface ApprovalStepCreationAttributes
-  extends Optional<ApprovalStepAttributes, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'isRequired'> {}
+  extends Optional<
+    ApprovalStepAttributes,
+    'id' | 'createdAt' | 'updatedAt' | 'status' | 'isRequired'
+  > {}
 
 export class ApprovalStep
   extends Model<ApprovalStepAttributes, ApprovalStepCreationAttributes>
@@ -129,14 +127,3 @@ ApprovalStep.init(
     timestamps: true,
   }
 );
-
-ApprovalStep.belongsTo(ApprovalRequest, {
-  foreignKey: 'approvalRequestId',
-  as: 'approvalRequest',
-});
-
-ApprovalStep.belongsTo(Employee, {
-  foreignKey: 'approverId',
-  as: 'approver',
-});
-

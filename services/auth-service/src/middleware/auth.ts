@@ -19,10 +19,8 @@ export const authenticate = async (
     const decodedToken = verifyAccessToken(token);
 
     req.user = {
-      uid: decodedToken.userId,
-      email: decodedToken.email,
-      role: decodedToken.role,
       ...decodedToken,
+      uid: decodedToken.userId,
     };
 
     next();

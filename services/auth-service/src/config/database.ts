@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize';
 import { logger } from '@hrm/common';
 
-const dbName = process.env.DB_NAME || 'hrm_db';
+const dbName = process.env.DB_NAME || 'quick_hr';
 const dbUser = process.env.DB_USER || 'postgres';
 const dbPassword = process.env.DB_PASSWORD || '';
 const dbHost = process.env.DB_HOST || 'localhost';
@@ -17,6 +17,12 @@ export const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
     min: 0,
     acquire: 30000,
     idle: 10000,
+  },
+  dialectOptions: {
+    connectTimeout: 10000, // 10 seconds connection timeout
+  },
+  retry: {
+    max: 3,
   },
 });
 

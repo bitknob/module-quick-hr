@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { User } from '../models/User.model';
-import { UserRole, ConflictError, NotFoundError, ValidationError, UnauthorizedError } from '@hrm/common';
+import { UserRole, ConflictError, NotFoundError, ValidationError, UnauthorizedError, logger } from '@hrm/common';
 import { generateAccessToken, generateRefreshToken, JWTPayload } from '../config/jwt';
 import { sendEmail } from '../config/email';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +9,17 @@ import { v4 as uuidv4 } from 'uuid';
 const SALT_ROUNDS = 12;
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 const RESET_TOKEN_EXPIRY_HOURS = 1;
+
+// Check if email sending is enabled via environment variable
+const isEmailSendingEnabled = (): boolean => {
+  const sendEmails = process.env.SEND_VERIFICATION_EMAIL;
+  // Default to true if not set (backward compatibility)
+  if (sendEmails === undefined || sendEmails === '') {
+    return true;
+  }
+  // Accept 'true', '1', 'yes' (case-insensitive) as enabled
+  return ['true', '1', 'yes'].includes(sendEmails.toLowerCase());
+};
 
 export class AuthService {
   static async hashPassword(password: string): Promise<string> {
@@ -33,6 +44,8 @@ export class AuthService {
     phoneNumber?: string;
     role?: UserRole;
   }): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+    logger.info(`Starting signup for email: ${data.email}`);
+    
     const existingUser = await User.findOne({ where: { email: data.email } });
     if (existingUser) {
       throw new ConflictError('Email already registered');
@@ -44,12 +57,18 @@ export class AuthService {
         throw new ConflictError('Phone number already registered');
       }
     }
+    
+    logger.info(`Email and phone checks passed for: ${data.email}`);
 
+    logger.info(`Hashing password for: ${data.email}`);
     const hashedPassword = await this.hashPassword(data.password);
+    logger.info(`Password hashed for: ${data.email}`);
+    
     const verificationToken = this.generateVerificationToken();
     const verificationTokenExpiry = new Date();
     verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS);
 
+    logger.info(`Creating user in database for: ${data.email}`);
     const user = await User.create({
       id: uuidv4(),
       email: data.email.toLowerCase().trim(),
@@ -63,7 +82,16 @@ export class AuthService {
       isActive: true,
     });
 
-    await this.sendVerificationEmail(user.email, verificationToken);
+    // Send verification email asynchronously (non-blocking) if enabled
+    // Don't wait for email to be sent - user creation should complete regardless
+    if (isEmailSendingEnabled()) {
+      this.sendVerificationEmail(user.email, verificationToken).catch((error) => {
+        logger.error('Failed to send verification email:', error);
+        // Email failure should not prevent user creation
+      });
+    } else {
+      logger.info('Email sending is disabled - skipping verification email');
+    }
 
     const payload: JWTPayload = {
       userId: user.id,
@@ -72,8 +100,11 @@ export class AuthService {
       emailVerified: user.emailVerified,
     };
 
+    logger.info(`Generating tokens for user: ${user.id}`);
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken({ userId: user.id });
+    
+    logger.info(`Signup completed successfully for: ${data.email}`);
 
     return { user, accessToken, refreshToken };
   }
@@ -125,8 +156,8 @@ export class AuthService {
     }
 
     user.emailVerified = true;
-    user.verificationToken = null;
-    user.verificationTokenExpiry = null;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
     await user.save();
 
     return user;
@@ -150,7 +181,11 @@ export class AuthService {
     user.verificationTokenExpiry = verificationTokenExpiry;
     await user.save();
 
-    await this.sendVerificationEmail(user.email, verificationToken);
+    if (isEmailSendingEnabled()) {
+      await this.sendVerificationEmail(user.email, verificationToken);
+    } else {
+      logger.info('Email sending is disabled - skipping verification email resend');
+    }
   }
 
   static async forgotPassword(email: string): Promise<void> {
@@ -167,7 +202,11 @@ export class AuthService {
     user.resetPasswordTokenExpiry = resetTokenExpiry;
     await user.save();
 
-    await this.sendPasswordResetEmail(user.email, resetToken);
+    if (isEmailSendingEnabled()) {
+      await this.sendPasswordResetEmail(user.email, resetToken);
+    } else {
+      logger.info('Email sending is disabled - skipping password reset email');
+    }
   }
 
   static async resetPassword(token: string, newPassword: string): Promise<User> {
@@ -187,8 +226,8 @@ export class AuthService {
 
     const hashedPassword = await this.hashPassword(newPassword);
     user.password = hashedPassword;
-    user.resetPasswordToken = null;
-    user.resetPasswordTokenExpiry = null;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiry = undefined;
     await user.save();
 
     return user;
@@ -219,6 +258,11 @@ export class AuthService {
   }
 
   private static async sendVerificationEmail(email: string, token: string): Promise<void> {
+    if (!isEmailSendingEnabled()) {
+      logger.info('Email sending is disabled - skipping verification email');
+      return;
+    }
+
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
 
     await sendEmail({
@@ -251,6 +295,11 @@ export class AuthService {
   }
 
   private static async sendPasswordResetEmail(email: string, token: string): Promise<void> {
+    if (!isEmailSendingEnabled()) {
+      logger.info('Email sending is disabled - skipping password reset email');
+      return;
+    }
+
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
     await sendEmail({
