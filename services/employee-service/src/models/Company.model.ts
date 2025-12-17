@@ -6,6 +6,7 @@ export interface CompanyAttributes {
   name: string;
   code: string;
   description?: string;
+  profileImageUrl?: string;
   hrbpId?: string;
   status: 'active' | 'inactive';
   createdAt?: Date;
@@ -23,6 +24,7 @@ export class Company
   public name!: string;
   public code!: string;
   public description?: string;
+  public profileImageUrl?: string;
   public hrbpId?: string;
   public status!: 'active' | 'inactive';
   public readonly createdAt!: Date;
@@ -47,6 +49,10 @@ Company.init(
     },
     description: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    profileImageUrl: {
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     hrbpId: {

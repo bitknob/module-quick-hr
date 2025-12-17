@@ -33,6 +33,7 @@ export class CompanyQueries {
       name?: string;
       code?: string;
       description?: string;
+      profileImageUrl?: string;
       hrbpId?: string;
       status?: 'active' | 'inactive';
     }

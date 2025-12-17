@@ -1,12 +1,13 @@
 import './config/env';
 import express from 'express';
 import cors from 'cors';
-import { logger, errorHandler, ResponseFormatter, setRequestLogger, requestLogger } from '@hrm/common';
+import { logger, errorHandler, ResponseFormatter, setRequestLogger, requestLogger, initializeFirebase } from '@hrm/common';
 import { connectDatabase } from './config/database';
 import { RequestLogModel } from './models/RequestLog.model';
 import './middleware/auth'; 
 import employeeRoutes from './routes/employee.routes';
 import approvalRoutes from './routes/approval.routes';
+import companyRoutes from './routes/company.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.EMPLOYEE_SERVICE_PORT || 9402;
@@ -18,6 +19,15 @@ app.use(express.urlencoded({ extended: true }));
 const startServer = async () => {
   try {
     await connectDatabase();
+    
+    // Initialize Firebase
+    try {
+      initializeFirebase();
+      logger.info('Firebase initialized successfully');
+    } catch (error) {
+      logger.warn('Firebase initialization failed:', error);
+      // Continue server startup even if Firebase fails
+    }
     
     setRequestLogger(async (log: any) => {
       try {
@@ -31,6 +41,7 @@ const startServer = async () => {
     
     app.use('/api/employees', employeeRoutes);
     app.use('/api/approvals', approvalRoutes);
+    app.use('/api/companies', companyRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(
