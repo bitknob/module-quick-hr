@@ -1,13 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../config/database';
-import { Employee } from './Employee.model';
-import { ApprovalStep } from './ApprovalStep.model';
-import { ApprovalHistory } from './ApprovalHistory.model';
-import {
-  ApprovalRequestType,
-  ApprovalStatus,
-  ApprovalPriority,
-} from '@hrm/common';
+import { ApprovalRequestType, ApprovalStatus, ApprovalPriority } from '@hrm/common';
 
 export interface ApprovalRequestAttributes {
   id: string;
@@ -31,7 +24,10 @@ export interface ApprovalRequestAttributes {
 }
 
 export interface ApprovalRequestCreationAttributes
-  extends Optional<ApprovalRequestAttributes, 'id' | 'createdAt' | 'updatedAt' | 'currentStep' | 'totalSteps' | 'status' | 'priority'> {}
+  extends Optional<
+    ApprovalRequestAttributes,
+    'id' | 'createdAt' | 'updatedAt' | 'currentStep' | 'totalSteps' | 'status' | 'priority'
+  > {}
 
 export class ApprovalRequest
   extends Model<ApprovalRequestAttributes, ApprovalRequestCreationAttributes>
@@ -153,24 +149,3 @@ ApprovalRequest.init(
     timestamps: true,
   }
 );
-
-ApprovalRequest.belongsTo(Employee, {
-  foreignKey: 'requestedBy',
-  as: 'requestedByEmployee',
-});
-
-ApprovalRequest.belongsTo(Employee, {
-  foreignKey: 'requestedFor',
-  as: 'requestedForEmployee',
-});
-
-ApprovalRequest.hasMany(ApprovalStep, {
-  foreignKey: 'approvalRequestId',
-  as: 'steps',
-});
-
-ApprovalRequest.hasMany(ApprovalHistory, {
-  foreignKey: 'approvalRequestId',
-  as: 'history',
-});
-

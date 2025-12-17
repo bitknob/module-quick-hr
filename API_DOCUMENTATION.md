@@ -23,6 +23,17 @@ Most endpoints require authentication. Include the JWT token in the Authorizatio
 Authorization: Bearer <access_token>
 ```
 
+## Request Logging
+
+All HTTP requests and responses are automatically logged to the database for auditing, debugging, and analysis purposes. The logging system captures:
+
+- **Request Details**: Method, URL, path, query parameters, headers (sanitized), body (sanitized)
+- **Response Details**: Status code, response body, response headers
+- **User Context**: User ID, Employee ID, Company ID (when available)
+- **Metadata**: IP address, User-Agent, request duration, service name, timestamp
+
+**Note**: Sensitive data (passwords, tokens, API keys) is automatically sanitized before logging. Logging is non-blocking and does not affect API performance.
+
 ---
 
 ## Auth Service Endpoints
@@ -1624,4 +1635,60 @@ All errors follow the standard response format:
 - `normal` - Normal priority (default)
 - `high` - High priority
 - `urgent` - Urgent priority
+
+## Request Logging Details
+
+All API requests are automatically logged to the `RequestLogs` table. Each log entry contains:
+
+### Logged Information
+
+- **Request**:
+  - HTTP method (GET, POST, PUT, DELETE, etc.)
+  - Full URL and path
+  - Query parameters
+  - Request headers (sensitive data redacted)
+  - Request body (sensitive data redacted)
+
+- **Response**:
+  - HTTP status code
+  - Response body
+  - Response headers
+
+- **User Context**:
+  - User ID (if authenticated)
+  - Employee ID (if available)
+  - Company ID (if available)
+
+- **Metadata**:
+  - Client IP address
+  - User-Agent string
+  - Request duration (milliseconds)
+  - Service name (auth-service, employee-service, etc.)
+  - Timestamp
+
+### Data Sanitization
+
+The following fields are automatically redacted in logs:
+- Authorization headers
+- Cookie headers
+- X-API-Key headers
+- Any field containing: `password`, `token`, `secret`, `key`, `authorization`
+
+### Querying Logs
+
+Request logs can be queried from the `RequestLogs` table using standard SQL:
+
+```sql
+-- Get all requests for a specific user
+SELECT * FROM "RequestLogs" WHERE "userId" = 'user-uuid' ORDER BY "createdAt" DESC;
+
+-- Get all failed requests (status >= 400)
+SELECT * FROM "RequestLogs" WHERE "responseStatus" >= 400 ORDER BY "createdAt" DESC;
+
+-- Get requests by service
+SELECT * FROM "RequestLogs" WHERE "serviceName" = 'auth-service' ORDER BY "createdAt" DESC;
+
+-- Get slow requests (> 1 second)
+SELECT * FROM "RequestLogs" WHERE "duration" > 1000 ORDER BY "duration" DESC;
+```
 

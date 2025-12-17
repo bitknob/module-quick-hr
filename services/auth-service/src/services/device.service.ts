@@ -195,7 +195,7 @@ export class DeviceService {
       where: {
         userId,
         isActive: true,
-        fcmToken: { [Op.ne]: null },
+        fcmToken: { [Op.ne]: null as any },
       },
       attributes: ['fcmToken'],
     });
@@ -208,7 +208,7 @@ export class DeviceService {
       where: {
         userId,
         isActive: true,
-        apnsToken: { [Op.ne]: null },
+        apnsToken: { [Op.ne]: null as any },
       },
       attributes: ['apnsToken'],
     });

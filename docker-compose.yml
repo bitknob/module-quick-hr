@@ -5,7 +5,7 @@ services:
     image: postgres:15-alpine
     container_name: hrm-postgres
     environment:
-      POSTGRES_DB: hrm_db
+      POSTGRES_DB: quick_hr
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -22,7 +22,7 @@ services:
     image: mongo:7
     container_name: hrm-mongodb
     environment:
-      MONGO_INITDB_DATABASE: hrm_db
+      MONGO_INITDB_DATABASE: quick_hr
     ports:
       - "27017:27017"
     volumes:

@@ -281,7 +281,7 @@ export class EmployeeQueries {
     newManagerId: string | null
   ): Promise<void> {
     await Employee.update(
-      { managerId: newManagerId },
+      { managerId: newManagerId ?? undefined },
       { where: { id: employeeId } }
     );
   }
