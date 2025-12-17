@@ -95,6 +95,7 @@ $RECYCLE.BIN/
 firebase-debug.log
 .firebase/
 firebase-options.json
+serviceAccountKey.json
 
 # Secrets and keys
 *.pem
