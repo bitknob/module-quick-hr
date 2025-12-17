@@ -17,9 +17,12 @@ export const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
     min: 0,
     acquire: 30000,
     idle: 10000,
+    evict: 1000,
   },
   dialectOptions: {
     connectTimeout: 10000, // 10 seconds connection timeout
+    statement_timeout: 5000, // 5 seconds query timeout
+    query_timeout: 5000, // 5 seconds query timeout
   },
   retry: {
     max: 3,

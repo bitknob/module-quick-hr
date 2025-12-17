@@ -5,6 +5,8 @@ import { UserRole, ConflictError, NotFoundError, ValidationError, UnauthorizedEr
 import { generateAccessToken, generateRefreshToken, JWTPayload } from '../config/jwt';
 import { sendEmail } from '../config/email';
 import { v4 as uuidv4 } from 'uuid';
+import { sequelize } from '../config/database';
+import { QueryTypes } from 'sequelize';
 
 const SALT_ROUNDS = 12;
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
@@ -106,38 +108,71 @@ export class AuthService {
     
     logger.info(`Signup completed successfully for: ${data.email}`);
 
-    return { user, accessToken, refreshToken };
+    // Convert Sequelize model to plain object
+    const userPlain = user.get({ plain: true });
+
+    return { user: userPlain as User, accessToken, refreshToken };
   }
 
   static async login(email: string, password: string): Promise<{ user: User; accessToken: string; refreshToken: string }> {
-    const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
-    if (!user) {
+    // Use raw SQL query to avoid Sequelize issues
+    const [users] = await sequelize.query(
+      'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
+      {
+        replacements: { email: email.trim() },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    if (!users) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    if (!user.isActive) {
+    const userData = users as any;
+    
+    if (!userData.password) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (userData.isActive === false) {
       throw new UnauthorizedError('Account is deactivated');
     }
 
-    const isPasswordValid = await this.comparePassword(password, user.password);
+    const isPasswordValid = await this.comparePassword(password, userData.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    user.lastLogin = new Date();
-    await user.save();
+    // Update lastLogin (fire and forget)
+    sequelize.query(
+      'UPDATE "Users" SET "lastLogin" = NOW() WHERE id = :id',
+      { replacements: { id: userData.id }, type: QueryTypes.UPDATE }
+    ).catch(() => {});
 
     const payload: JWTPayload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      emailVerified: user.emailVerified,
+      userId: userData.id,
+      email: userData.email,
+      role: userData.role,
+      emailVerified: userData.emailVerified,
     };
 
     const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken({ userId: user.id });
+    const refreshToken = generateRefreshToken({ userId: userData.id });
 
-    return { user, accessToken, refreshToken };
+    return { 
+      user: {
+        id: userData.id,
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        emailVerified: userData.emailVerified,
+        phoneVerified: userData.phoneVerified,
+        isActive: userData.isActive,
+        password: '',
+      } as User, 
+      accessToken, 
+      refreshToken 
+    };
   }
 
   static async verifyEmail(token: string): Promise<User> {

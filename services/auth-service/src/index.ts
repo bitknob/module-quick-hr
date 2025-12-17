@@ -16,43 +16,53 @@ app.use(cors());
 // Body parsing with error handling for aborted requests
 app.use((req, res, next) => {
   express.json({ limit: '10mb' })(req, res, (err: any) => {
-    if (err && (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET')) {
-      logger.warn('Request aborted during JSON body parsing', { 
-        method: req.method, 
-        url: req.url,
-        error: err.message 
-      });
-      
-      if (!res.headersSent) {
-        return res.status(400).json({
-          success: false,
-          error: 'Request was aborted',
+    if (err) {
+      if (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET') {
+        logger.warn('Request aborted during JSON body parsing', { 
+          method: req.method, 
+          url: req.url,
+          error: err.message 
         });
+        
+        if (!res.headersSent) {
+          return res.status(400).json({
+            success: false,
+            error: 'Request was aborted',
+          });
+        }
+        return;
       }
-      return;
+      // For other errors, pass to error handler
+      return next(err);
     }
-    next(err);
+    // No error, continue
+    next();
   });
 });
 
 app.use((req, res, next) => {
   express.urlencoded({ extended: true, limit: '10mb' })(req, res, (err: any) => {
-    if (err && (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET')) {
-      logger.warn('Request aborted during URL-encoded body parsing', { 
-        method: req.method, 
-        url: req.url,
-        error: err.message 
-      });
-      
-      if (!res.headersSent) {
-        return res.status(400).json({
-          success: false,
-          error: 'Request was aborted',
+    if (err) {
+      if (err.message?.includes('aborted') || err.message?.includes('socket hang up') || err.code === 'ECONNRESET') {
+        logger.warn('Request aborted during URL-encoded body parsing', { 
+          method: req.method, 
+          url: req.url,
+          error: err.message 
         });
+        
+        if (!res.headersSent) {
+          return res.status(400).json({
+            success: false,
+            error: 'Request was aborted',
+          });
+        }
+        return;
       }
-      return;
+      // For other errors, pass to error handler
+      return next(err);
     }
-    next(err);
+    // No error, continue
+    next();
   });
 });
 
