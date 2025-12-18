@@ -143,6 +143,27 @@ app.use(
 );
 
 app.use(
+  '/api/search',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/search': '/api/search',
+    },
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+      });
+    },
+  })
+);
+
+app.use(
   '/api/devices',
   createProxyMiddleware({
     target: AUTH_SERVICE_URL,
