@@ -9,6 +9,14 @@ export interface MenuItem {
   roles: UserRole[];
 }
 
+export type MenuItemWithoutRoles = {
+  id: string;
+  label: string;
+  path: string;
+  icon?: string;
+  children?: MenuItemWithoutRoles[];
+};
+
 export class MenuService {
   private static readonly ALL_MENU_ITEMS: MenuItem[] = [
     {
@@ -265,20 +273,33 @@ export class MenuService {
     },
   ];
 
-  static getMenuForRole(role: UserRole): MenuItem[] {
+  static getMenuForRole(role: UserRole): MenuItemWithoutRoles[] {
     return this.ALL_MENU_ITEMS
       .filter((item) => item.roles.includes(role))
-      .map((item) => {
-        const menuItem: MenuItem = {
+      .map((item): MenuItemWithoutRoles => {
+        const menuItem: MenuItemWithoutRoles = {
           id: item.id,
           label: item.label,
           path: item.path,
           icon: item.icon,
-          roles: item.roles,
         };
 
         if (item.children) {
-          menuItem.children = item.children.filter((child) => child.roles.includes(role));
+          const accessibleChildren: MenuItemWithoutRoles[] = item.children
+            .filter((child) => child.roles.includes(role))
+            .map((child): MenuItemWithoutRoles => {
+              const { roles, ...rest } = child;
+              return {
+                id: rest.id,
+                label: rest.label,
+                path: rest.path,
+                icon: rest.icon,
+              };
+            });
+          
+          if (accessibleChildren.length > 0) {
+            (menuItem as MenuItemWithoutRoles).children = accessibleChildren;
+          }
         }
 
         return menuItem;

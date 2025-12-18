@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service';
-import { AccessControl, UserRole, ResponseFormatter } from '@hrm/common';
+import { AccessControl, UserRole, ResponseFormatter, NotFoundError } from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
 
 export const createEmployee = async (
@@ -59,8 +59,32 @@ export const getCurrentEmployee = async (
       return ResponseFormatter.error(res, 'User not authenticated', '', 401);
     }
 
-    const employee = await EmployeeService.getEmployeeByUserId(req.user.uid);
-    ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
+    const userRole = req.user?.role as UserRole;
+    const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+
+    try {
+      const employee = await EmployeeService.getEmployeeByUserId(req.user.uid);
+      ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
+    } catch (error) {
+      if (error instanceof NotFoundError && canAccessAll) {
+        // Super Admin or Provider Admin without employee record
+        // Return user information instead
+        ResponseFormatter.success(
+          res,
+          {
+            id: null,
+            userId: req.user.uid,
+            email: req.user.email,
+            role: req.user.role,
+            isSuperAdmin: true,
+            hasEmployeeRecord: false,
+          },
+          'User information retrieved successfully (no employee record)'
+        );
+      } else {
+        next(error);
+      }
+    }
   } catch (error) {
     next(error);
   }

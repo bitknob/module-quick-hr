@@ -1,8 +1,5 @@
 import { Op } from 'sequelize';
-import { ApprovalRequest } from '../models/ApprovalRequest.model';
-import { ApprovalStep } from '../models/ApprovalStep.model';
-import { ApprovalHistory } from '../models/ApprovalHistory.model';
-import { Employee } from '../models/Employee.model';
+import { ApprovalRequest, ApprovalStep, ApprovalHistory, Employee } from '../models';
 import {
   ApprovalRequestType,
   ApprovalStatus,
@@ -135,6 +132,32 @@ export class ApprovalQueries {
     });
 
     return pendingSteps.map((step) => (step as any).approvalRequest);
+  }
+
+  static async findAllPending(companyId?: string): Promise<ApprovalRequest[]> {
+    const where: any = {
+      status: ApprovalStatus.PENDING,
+    };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+
+    return await ApprovalRequest.findAll({
+      where,
+      include: [
+        {
+          model: Employee,
+          as: 'requestedByEmployee',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+        },
+        {
+          model: Employee,
+          as: 'requestedForEmployee',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
   }
 
   static async createApprovalStep(data: {

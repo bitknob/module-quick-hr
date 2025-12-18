@@ -1,9 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { ApprovalService } from '../services/approval.service';
-import { ResponseFormatter } from '@hrm/common';
+import { ResponseFormatter, AccessControl, UserRole, ApprovalRequestType, ApprovalStatus, ApproverType, ApprovalPriority } from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
-import { ApprovalRequestType, ApprovalStatus, ApproverType, ApprovalPriority } from '@hrm/common';
 
 const createApprovalRequestSchema = z.object({
   requestType: z.nativeEnum(ApprovalRequestType),
@@ -75,12 +74,16 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+      const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+      
+      if (!req.employee && !canAccessAll) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
       const { id } = req.params;
-      const approvalRequest = await ApprovalService.getApprovalRequest(id, req.employee.companyId);
+      const companyId = canAccessAll ? undefined : req.employee?.companyId;
+      const approvalRequest = await ApprovalService.getApprovalRequest(id, companyId);
 
       ResponseFormatter.success(res, approvalRequest, 'Approval request retrieved successfully');
     } catch (error) {
@@ -94,7 +97,10 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+      const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+      
+      if (!req.employee && !canAccessAll) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
@@ -106,7 +112,7 @@ export class ApprovalController {
       const requestedFor = req.query.requestedFor as string | undefined;
 
       const result = await ApprovalService.getApprovalRequests({
-        companyId: req.employee.companyId,
+        companyId: canAccessAll ? undefined : req.employee?.companyId,
         requestType,
         status,
         requestedBy,
@@ -134,13 +140,18 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+
+      if (!req.employee && !AccessControl.canAccessAllCompanies(userRole)) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
+      const approverId = req.employee?.id;
+      const companyId = req.employee?.companyId;
+
       const pendingApprovals = await ApprovalService.getPendingApprovals(
-        req.employee.id,
-        req.employee.companyId
+        approverId,
+        companyId
       );
 
       ResponseFormatter.success(
@@ -160,18 +171,25 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+      const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+      
+      if (!req.employee && !canAccessAll) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
       const { id } = req.params;
       const validatedData = approveRequestSchema.parse(req.body);
 
+      const approverId = req.employee?.id || req.user?.uid || '';
+      const companyId = canAccessAll ? undefined : req.employee?.companyId;
+
       const approvalRequest = await ApprovalService.approveRequest(
         id,
-        req.employee.id,
-        req.employee.companyId,
-        validatedData.comments
+        approverId,
+        companyId,
+        validatedData.comments,
+        canAccessAll
       );
 
       ResponseFormatter.success(
@@ -191,19 +209,26 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+      const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+      
+      if (!req.employee && !canAccessAll) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
       const { id } = req.params;
       const validatedData = rejectRequestSchema.parse(req.body);
 
+      const approverId = req.employee?.id || req.user?.uid || '';
+      const companyId = canAccessAll ? undefined : req.employee?.companyId;
+
       const approvalRequest = await ApprovalService.rejectRequest(
         id,
-        req.employee.id,
-        req.employee.companyId,
+        approverId,
+        companyId,
         validatedData.rejectionReason,
-        validatedData.comments
+        validatedData.comments,
+        canAccessAll
       );
 
       ResponseFormatter.success(
@@ -223,18 +248,25 @@ export class ApprovalController {
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.employee) {
+      const userRole = req.user?.role as UserRole;
+      const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
+      
+      if (!req.employee && !canAccessAll) {
         return ResponseFormatter.error(res, 'Employee context not found', '', 400);
       }
 
       const { id } = req.params;
       const validatedData = cancelRequestSchema.parse(req.body);
 
+      const cancelledBy = req.employee?.id || req.user?.uid || '';
+      const companyId = canAccessAll ? undefined : req.employee?.companyId;
+
       const approvalRequest = await ApprovalService.cancelRequest(
         id,
-        req.employee.id,
-        req.employee.companyId,
-        validatedData.reason
+        cancelledBy,
+        companyId,
+        validatedData.reason,
+        canAccessAll
       );
 
       ResponseFormatter.success(

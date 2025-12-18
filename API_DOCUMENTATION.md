@@ -948,6 +948,10 @@ curl -X POST http://localhost:9400/api/approvals \
 **Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid`  
 **Authentication:** Required
 
+**Access Control:**
+- **Regular Users:** Can only view approval requests from their own company
+- **Super Admins:** Can view any approval request across all companies (no company restriction)
+
 **Response (200):**
 ```json
 {
@@ -1007,6 +1011,10 @@ curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
 **Full URL:** `http://localhost:9400/api/approvals?page=1&limit=10&status=pending`  
 **Authentication:** Required
 
+**Access Control:**
+- **Regular Users:** Can only view approval requests from their own company
+- **Super Admins:** Can view all approval requests across all companies (no company restriction)
+
 **Query Parameters:**
 - `page` (number, optional) - Page number (default: 1)
 - `limit` (number, optional) - Items per page (default: 10)
@@ -1051,6 +1059,10 @@ curl -X GET "http://localhost:9400/api/approvals?page=1&limit=10&status=pending"
 **Full URL:** `http://localhost:9400/api/approvals/pending`  
 **Authentication:** Required
 
+**Access Control:**
+- **Regular Users:** Returns approval requests pending action from the current user (where they are assigned as approver)
+- **Super Admins:** Returns all pending approval requests across all companies (no employee context required)
+
 Returns all approval requests pending action from the current user.
 
 **Response (200):**
@@ -1088,6 +1100,10 @@ curl -X GET http://localhost:9400/api/approvals/pending \
 **URL:** `/api/approvals/:id/approve`  
 **Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/approve`  
 **Authentication:** Required
+
+**Access Control:**
+- **Regular Users:** Can only approve requests where they are assigned as the approver for the current step
+- **Super Admins:** Can approve any pending approval request, even if not assigned as approver (bypasses authorization check)
 
 **Request Body:**
 ```json
@@ -1131,6 +1147,10 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
 **URL:** `/api/approvals/:id/reject`  
 **Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/reject`  
 **Authentication:** Required
+
+**Access Control:**
+- **Regular Users:** Can only reject requests where they are assigned as the approver for the current step
+- **Super Admins:** Can reject any pending approval request, even if not assigned as approver (bypasses authorization check)
 
 **Request Body:**
 ```json
@@ -1176,6 +1196,10 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
 **URL:** `/api/approvals/:id/cancel`  
 **Full URL:** `http://localhost:9400/api/approvals/approval-request-uuid/cancel`  
 **Authentication:** Required
+
+**Access Control:**
+- **Regular Users:** Can only cancel requests they created (must be the requester)
+- **Super Admins:** Can cancel any pending approval request, regardless of who created it (bypasses requester restriction)
 
 **Request Body:**
 ```json
@@ -1809,7 +1833,11 @@ All employee endpoints require authentication.
 **Full URL:** `http://localhost:9400/api/employees/me`  
 **Authentication:** Required
 
-**Response (200):**
+**Access Control:**
+- **Regular Users:** Returns the employee record associated with the authenticated user. Returns 404 if no employee record exists.
+- **Super Admins / Provider Admins / Provider HR Staff:** If no employee record exists, returns user information indicating they are a Super Admin without an employee record (instead of 404).
+
+**Response (200) - With Employee Record:**
 ```json
 {
   "header": {
@@ -1838,11 +1866,47 @@ All employee endpoints require authentication.
 }
 ```
 
+**Response (200) - Super Admin Without Employee Record:**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "User information retrieved successfully (no employee record)",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": null,
+    "userId": "user_uuid",
+    "email": "admin@quickhr.com",
+    "role": "super_admin",
+    "isSuperAdmin": true,
+    "hasEmployeeRecord": false
+  }
+}
+```
+
+**Response (404) - Regular User Without Employee Record:**
+```json
+{
+  "header": {
+    "responseCode": 404,
+    "responseMessage": "Employee not found",
+    "responseDetail": "Employee not found"
+  },
+  "response": null
+}
+```
+
 **cURL:**
 ```bash
 curl -X GET http://localhost:9400/api/employees/me \
   -H "Authorization: Bearer <access_token>"
 ```
+
+**Notes:**
+- Super Admins, Provider Admins, and Provider HR Staff can access this endpoint even without an employee record
+- The response for Super Admins without employee records includes `isSuperAdmin: true` and `hasEmployeeRecord: false` to help frontend applications adjust the UI accordingly
+- Regular users (employees, managers, etc.) will receive a 404 error if they don't have an employee record
 
 ---
 

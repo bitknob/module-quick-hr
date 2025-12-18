@@ -106,8 +106,9 @@ export class ApprovalService {
   static async approveRequest(
     requestId: string,
     approverId: string,
-    companyId: string,
-    comments?: string
+    companyId: string | undefined,
+    comments?: string,
+    isSuperAdmin: boolean = false
   ): Promise<any> {
     const request = await ApprovalQueries.findById(requestId, companyId);
     if (!request) {
@@ -123,7 +124,7 @@ export class ApprovalService {
       throw new NotFoundError('Current approval step not found');
     }
 
-    if (currentStep.approverId !== approverId) {
+    if (!isSuperAdmin && currentStep.approverId !== approverId) {
       throw new ForbiddenError('You are not authorized to approve this step');
     }
 
@@ -158,9 +159,10 @@ export class ApprovalService {
   static async rejectRequest(
     requestId: string,
     approverId: string,
-    companyId: string,
+    companyId: string | undefined,
     rejectionReason: string,
-    comments?: string
+    comments?: string,
+    isSuperAdmin: boolean = false
   ): Promise<any> {
     const request = await ApprovalQueries.findById(requestId, companyId);
     if (!request) {
@@ -176,7 +178,7 @@ export class ApprovalService {
       throw new NotFoundError('Current approval step not found');
     }
 
-    if (currentStep.approverId !== approverId) {
+    if (!isSuperAdmin && currentStep.approverId !== approverId) {
       throw new ForbiddenError('You are not authorized to reject this step');
     }
 
@@ -251,15 +253,19 @@ export class ApprovalService {
     };
   }
 
-  static async getPendingApprovals(approverId: string, companyId?: string): Promise<any[]> {
-    return await ApprovalQueries.findPendingForApprover(approverId, companyId);
+  static async getPendingApprovals(approverId?: string, companyId?: string): Promise<any[]> {
+    if (approverId) {
+      return await ApprovalQueries.findPendingForApprover(approverId, companyId);
+    }
+    return await ApprovalQueries.findAllPending(companyId);
   }
 
   static async cancelRequest(
     requestId: string,
     cancelledBy: string,
     companyId?: string,
-    reason?: string
+    reason?: string,
+    isSuperAdmin: boolean = false
   ): Promise<any> {
     const request = await ApprovalQueries.findById(requestId, companyId);
     if (!request) {
@@ -270,7 +276,7 @@ export class ApprovalService {
       throw new ValidationError('Only pending requests can be cancelled');
     }
 
-    if (request.requestedBy !== cancelledBy) {
+    if (!isSuperAdmin && request.requestedBy !== cancelledBy) {
       throw new ForbiddenError('Only the requester can cancel the request');
     }
 

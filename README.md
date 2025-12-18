@@ -178,7 +178,7 @@ module-quick-hr/
 
 ## User Roles and Hierarchy
 
-1. **Super Admin** - Full system access, can manage all companies
+1. **Super Admin** - Full system access, can manage all companies. Has unrestricted access to all data and can override approval workflows, view/edit any employee records, and configure system-wide settings across all companies.
 2. **Provider Admin** - Manages provider HR team, access to all companies
 3. **Provider HR Staff** - Handles shared services, access to multiple/all companies
 4. **HRBP** - Dedicated HR Business Partner, assigned to one company
@@ -300,6 +300,17 @@ The system includes a comprehensive approval workflow system:
 - **Status Tracking**: Pending, approved, rejected, cancelled, expired
 - **Priority Levels**: Low, normal, high, urgent
 - **Comments & Rejection Reasons**: Full communication support
+
+### Super Admin Capabilities in Approval System
+
+Super Admins have unrestricted access to the approval system:
+
+- **View All Approvals**: Can view all approval requests across all companies (no company restriction)
+- **View Pending Approvals**: Can see all pending approvals system-wide, not just those assigned to them
+- **Approve Any Request**: Can approve any pending approval request, even if not assigned as approver (bypasses authorization check)
+- **Reject Any Request**: Can reject any pending approval request, even if not assigned as approver (bypasses authorization check)
+- **Cancel Any Request**: Can cancel any pending approval request, regardless of who created it (bypasses requester restriction)
+- **No Employee Context Required**: Super Admins can perform all approval actions without requiring an employee record
 
 ## Request Logging
 
