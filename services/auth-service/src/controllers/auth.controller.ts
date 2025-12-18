@@ -53,7 +53,24 @@ export const signup = async (
 ): Promise<void> => {
   try {
     const validatedData = signupSchema.parse(req.body);
-    const result = await AuthService.signup(validatedData);
+    
+    // Restrict public signup to non-privileged roles only
+    // Privileged roles (super_admin, provider_admin, provider_hr_staff) must be created by existing admins
+    if (validatedData.role && [
+      UserRole.SUPER_ADMIN,
+      UserRole.PROVIDER_ADMIN,
+      UserRole.PROVIDER_HR_STAFF,
+    ].includes(validatedData.role)) {
+      return next(new ValidationError('Privileged roles cannot be assigned during public signup'));
+    }
+    
+    // Default to employee role if not specified
+    const signupData = {
+      ...validatedData,
+      role: validatedData.role || UserRole.EMPLOYEE,
+    };
+    
+    const result = await AuthService.signup(signupData);
 
     ResponseFormatter.success(
       res,

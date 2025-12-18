@@ -32,6 +32,7 @@ A comprehensive Human Resource Management (HRM) system built with Node.js and Ty
 
 3. **Employee Service** (Port 9402)
    - Employee CRUD operations
+   - Company management (create, update company profile)
    - Organizational hierarchy management
    - Company-based access control
    - Employee search and filtering

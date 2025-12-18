@@ -24,7 +24,10 @@ export class CompanyQueries {
     description?: string;
     hrbpId?: string;
   }): Promise<Company> {
-    return await Company.create(data);
+    return await Company.create({
+      ...data,
+      status: 'active',
+    });
   }
 
   static async update(
@@ -37,17 +40,19 @@ export class CompanyQueries {
       hrbpId?: string;
       status?: 'active' | 'inactive';
     }
-  ): Promise<[number]> {
-    return await Company.update(data, {
+  ): Promise<number> {
+    const [affectedCount] = await Company.update(data, {
       where: { id },
     });
+    return affectedCount;
   }
 
   static async delete(id: string): Promise<number> {
-    return await Company.update(
+    const [affectedCount] = await Company.update(
       { status: 'inactive' },
       { where: { id } }
     );
+    return affectedCount;
   }
 }
 

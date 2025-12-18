@@ -1,23 +1,33 @@
 import { Department } from '../models/Department.model';
 
 export class DepartmentQueries {
-  static async findAll(): Promise<Department[]> {
+  static async findAll(companyId?: string): Promise<Department[]> {
+    const where: any = {};
+    if (companyId) {
+      where.companyId = companyId;
+    }
     return await Department.findAll({
+      where,
       order: [['name', 'ASC']],
     });
   }
 
-  static async findById(id: string): Promise<Department | null> {
-    return await Department.findByPk(id);
+  static async findById(id: string, companyId?: string): Promise<Department | null> {
+    const where: any = { id };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    return await Department.findOne({ where });
   }
 
-  static async findByName(name: string): Promise<Department | null> {
+  static async findByName(name: string, companyId: string): Promise<Department | null> {
     return await Department.findOne({
-      where: { name },
+      where: { name, companyId },
     });
   }
 
   static async create(data: {
+    companyId: string;
     name: string;
     description?: string;
     headId?: string;

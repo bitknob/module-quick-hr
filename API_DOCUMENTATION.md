@@ -424,6 +424,173 @@ curl -X POST http://localhost:9400/api/auth/change-password \
 
 ---
 
+### 10. Get Menu (Role-Based)
+
+**Method:** `GET`  
+**URL:** `/api/auth/menu`  
+**Full URL:** `http://localhost:9400/api/auth/menu`  
+**Authentication:** Required
+
+Returns a dynamic menu structure based on the authenticated user's role. Each menu item includes navigation paths and icons suitable for frontend rendering.
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Menu retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "path": "/dashboard",
+      "icon": "home",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+    },
+    {
+      "id": "companies",
+      "label": "Companies",
+      "path": "/dashboard/companies",
+      "icon": "building",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff"]
+    },
+    {
+      "id": "employees",
+      "label": "Employees",
+      "path": "/dashboard/employees",
+      "icon": "users",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"],
+      "children": [
+        {
+          "id": "employees-list",
+          "label": "All Employees",
+          "path": "/dashboard/employees",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"]
+        },
+        {
+          "id": "employees-create",
+          "label": "Create Employee",
+          "path": "/dashboard/employees/create",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"]
+        }
+      ]
+    },
+    {
+      "id": "departments",
+      "label": "Departments",
+      "path": "/dashboard/departments",
+      "icon": "sitemap",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+    },
+    {
+      "id": "approvals",
+      "label": "Approvals",
+      "path": "/dashboard/approvals",
+      "icon": "check-circle",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"],
+      "children": [
+        {
+          "id": "approvals-pending",
+          "label": "Pending Approvals",
+          "path": "/dashboard/approvals/pending",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+        },
+        {
+          "id": "approvals-all",
+          "label": "All Approvals",
+          "path": "/dashboard/approvals",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"]
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "label": "Leave",
+      "path": "/dashboard/leave",
+      "icon": "calendar",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"],
+      "children": [
+        {
+          "id": "leave-requests",
+          "label": "My Leave Requests",
+          "path": "/dashboard/leave/requests",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+        },
+        {
+          "id": "leave-create",
+          "label": "Request Leave",
+          "path": "/dashboard/leave/create",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+        }
+      ]
+    },
+    {
+      "id": "attendance",
+      "label": "Attendance",
+      "path": "/dashboard/attendance",
+      "icon": "clock",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "path": "/dashboard/profile",
+      "icon": "user",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "path": "/dashboard/settings",
+      "icon": "settings",
+      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"],
+      "children": [
+        {
+          "id": "settings-general",
+          "label": "General",
+          "path": "/dashboard/settings/general",
+          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin"]
+        },
+        {
+          "id": "settings-users",
+          "label": "Users",
+          "path": "/dashboard/settings/users",
+          "roles": ["super_admin", "provider_admin"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/auth/menu \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Menu Structure:**
+- Each menu item includes:
+  - `id`: Unique identifier for the menu item
+  - `label`: Display text for the menu item
+  - `path`: Frontend route path
+  - `icon`: Icon identifier (optional, for frontend icon rendering)
+  - `children`: Nested menu items (optional)
+  - `roles`: List of roles that can access this menu item (for reference)
+
+**Role-Based Filtering:**
+The API automatically filters menu items based on the authenticated user's role. Only menu items that the user's role has access to are returned.
+
+**Available Menu Items by Role:**
+- **Super Admin / Provider Admin / Provider HR Staff**: All menu items including Companies, Employees, Departments, Approvals, Leave, Attendance, Profile, Settings
+- **HRBP / Company Admin**: Employees, Departments, Approvals, Leave, Attendance, Profile, Settings (no Companies)
+- **Department Head / Manager**: Departments, Approvals, Leave, Attendance, Profile (no Companies, Employees, Settings)
+- **Employee**: Dashboard, Leave, Attendance, Profile (basic self-service items only)
+
+---
+
 ## Device Management Endpoints
 
 Base Path: `/api/devices`
@@ -1041,6 +1208,591 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/cancel \
     "reason": "No longer needed"
   }'
 ```
+
+---
+
+## Company Service Endpoints
+
+Base Path: `/api/companies`
+
+All company endpoints require authentication.
+
+### 1. Get All Companies
+
+**Method:** `GET`  
+**URL:** `/api/companies`  
+**Full URL:** `http://localhost:9400/api/companies`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Companies retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "company-uuid-1",
+      "name": "Acme Corporation",
+      "code": "ACME001",
+      "description": "A leading technology company",
+      "profileImageUrl": "https://firebase-storage-url/companies/company-uuid-1/image.jpg",
+      "hrbpId": "hrbp-uuid",
+      "status": "active",
+      "createdAt": "2025-01-14T10:30:00.000Z",
+      "updatedAt": "2025-01-14T10:30:00.000Z"
+    },
+    {
+      "id": "company-uuid-2",
+      "name": "Tech Solutions Inc",
+      "code": "TECH001",
+      "description": "Technology consulting firm",
+      "profileImageUrl": null,
+      "hrbpId": null,
+      "status": "active",
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "updatedAt": "2025-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/companies \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 2. Get Company by ID
+
+**Method:** `GET`  
+**URL:** `/api/companies/:id`  
+**Full URL:** `http://localhost:9400/api/companies/{company_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`  
+**Access Control:** Company-scoped users can only access their own company
+
+**Path Parameters:**
+- `id` (string, required) - Company UUID
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Company retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "company-uuid",
+    "name": "Acme Corporation",
+    "code": "ACME001",
+    "description": "A leading technology company",
+    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg",
+    "hrbpId": "hrbp-uuid",
+    "status": "active",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-14T10:30:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/companies/{company_id} \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `404` - Not Found (company not found)
+- `403` - Forbidden (insufficient permissions or cannot access different company)
+
+---
+
+### 3. Create Company
+
+**Method:** `POST`  
+**URL:** `/api/companies`  
+**Full URL:** `http://localhost:9400/api/companies`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`
+
+**Request Body:**
+```json
+{
+  "name": "Acme Corporation",
+  "code": "ACME001",
+  "description": "A leading technology company",
+  "hrbpId": "hrbp-uuid"
+}
+```
+
+**Required Fields:**
+- `name` (string, required) - Company name
+- `code` (string, required) - Unique company code (must be unique across all companies)
+
+**Optional Fields:**
+- `description` (string, optional) - Company description
+- `hrbpId` (string, optional) - UUID of the HR Business Partner assigned to the company
+
+**Response (201):**
+```json
+{
+  "header": {
+    "responseCode": 201,
+    "responseMessage": "Company created successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "company-uuid",
+    "name": "Acme Corporation",
+    "code": "ACME001",
+    "description": "A leading technology company",
+    "profileImageUrl": null,
+    "hrbpId": "hrbp-uuid",
+    "status": "active",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-14T10:30:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/companies \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corporation",
+    "code": "ACME001",
+    "description": "A leading technology company"
+  }'
+```
+
+**Error Responses:**
+- `400` - Bad Request (missing required fields: name or code)
+- `409` - Conflict (company code already exists)
+- `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
+
+---
+
+### 4. Update Company
+
+**Method:** `PUT`  
+**URL:** `/api/companies/:id`  
+**Full URL:** `http://localhost:9400/api/companies/{company_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`
+
+**Path Parameters:**
+- `id` (string, required) - Company UUID
+
+**Request Body:**
+```json
+{
+  "name": "Acme Corporation Updated",
+  "code": "ACME001",
+  "description": "Updated company description",
+  "hrbpId": "new-hrbp-uuid",
+  "status": "active"
+}
+```
+
+**All Fields are Optional:**
+- `name` (string, optional) - Company name
+- `code` (string, optional) - Unique company code (must be unique if provided)
+- `description` (string, optional) - Company description
+- `hrbpId` (string, optional) - UUID of the HR Business Partner assigned to the company
+- `status` (string, optional) - Company status (`active` or `inactive`)
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Company updated successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "company-uuid",
+    "name": "Acme Corporation Updated",
+    "code": "ACME001",
+    "description": "Updated company description",
+    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg",
+    "hrbpId": "new-hrbp-uuid",
+    "status": "active",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-15T11:00:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X PUT http://localhost:9400/api/companies/{company_id} \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corporation Updated",
+    "description": "Updated company description"
+  }'
+```
+
+**Error Responses:**
+- `404` - Not Found (company not found)
+- `409` - Conflict (company code already exists if code is changed)
+- `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
+
+---
+
+### 5. Delete Company
+
+**Method:** `DELETE`  
+**URL:** `/api/companies/:id`  
+**Full URL:** `http://localhost:9400/api/companies/{company_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`
+
+**Path Parameters:**
+- `id` (string, required) - Company UUID
+
+**Note:** This performs a soft delete by setting the company status to `inactive`. The company record remains in the database.
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Company deleted successfully",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+```bash
+curl -X DELETE http://localhost:9400/api/companies/{company_id} \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `404` - Not Found (company not found)
+- `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
+
+---
+
+### 6. Upload Company Profile Image
+
+**Method:** `POST`  
+**URL:** `/api/companies/:companyId/upload-profile-image`  
+**Full URL:** `http://localhost:9400/api/companies/{company_id}/upload-profile-image`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
+
+**Path Parameters:**
+- `companyId` (string, required) - Company UUID
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- Body: Form data with `image` file field
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Company profile image uploaded successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "company-uuid",
+    "name": "Acme Corporation",
+    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/companies/{company_id}/upload-profile-image \
+  -H "Authorization: Bearer <access_token>" \
+  -F "image=@/path/to/image.jpg"
+```
+
+**Note:** If a profile image already exists, the old image will be automatically deleted from Firebase Storage before uploading the new one.
+
+---
+
+## Department Service Endpoints
+
+Base Path: `/api/departments`
+
+All department endpoints require authentication. Departments are company-scoped - each department belongs to a specific company.
+
+### 1. Get All Departments
+
+**Method:** `GET`  
+**URL:** `/api/departments`  
+**Full URL:** `http://localhost:9400/api/departments?companyId=company-uuid`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
+
+**Query Parameters:**
+- `companyId` (string, optional) - Filter departments by company ID. If not provided and user is company-scoped, automatically filters by user's company.
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Departments retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "department-uuid-1",
+      "companyId": "company-uuid",
+      "name": "Engineering",
+      "description": "Software Development and Engineering",
+      "headId": "employee-uuid",
+      "createdAt": "2025-01-14T10:30:00.000Z",
+      "updatedAt": "2025-01-14T10:30:00.000Z"
+    },
+    {
+      "id": "department-uuid-2",
+      "companyId": "company-uuid",
+      "name": "Human Resources",
+      "description": "HR Management and Operations",
+      "headId": null,
+      "createdAt": "2025-01-14T10:30:00.000Z",
+      "updatedAt": "2025-01-14T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 2. Get Department by ID
+
+**Method:** `GET`  
+**URL:** `/api/departments/:id`  
+**Full URL:** `http://localhost:9400/api/departments/{department_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`  
+**Access Control:** Company-scoped users can only access departments from their own company
+
+**Path Parameters:**
+- `id` (string, required) - Department UUID
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Department retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "department-uuid",
+    "companyId": "company-uuid",
+    "name": "Engineering",
+    "description": "Software Development and Engineering",
+    "headId": "employee-uuid",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-14T10:30:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/departments/{department_id} \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `404` - Not Found (department not found)
+- `403` - Forbidden (insufficient permissions or cannot access different company)
+
+---
+
+### 3. Create Department
+
+**Method:** `POST`  
+**URL:** `/api/departments`  
+**Full URL:** `http://localhost:9400/api/departments`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
+
+**Request Body:**
+```json
+{
+  "companyId": "company-uuid",
+  "name": "Engineering",
+  "description": "Software Development and Engineering",
+  "headId": "employee-uuid"
+}
+```
+
+**Required Fields:**
+- `companyId` (string, required) - Company UUID that the department belongs to
+- `name` (string, required) - Department name (must be unique within the company)
+
+**Optional Fields:**
+- `description` (string, optional) - Department description
+- `headId` (string, optional) - UUID of the employee who is the department head
+
+**Response (201):**
+```json
+{
+  "header": {
+    "responseCode": 201,
+    "responseMessage": "Department created successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "department-uuid",
+    "companyId": "company-uuid",
+    "name": "Engineering",
+    "description": "Software Development and Engineering",
+    "headId": "employee-uuid",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-14T10:30:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:9400/api/departments \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyId": "company-uuid",
+    "name": "Engineering",
+    "description": "Software Development and Engineering"
+  }'
+```
+
+**Error Responses:**
+- `400` - Bad Request (missing required fields: companyId or name)
+- `409` - Conflict (department name already exists in this company)
+- `403` - Forbidden (insufficient permissions or cannot create department in different company)
+
+---
+
+### 4. Update Department
+
+**Method:** `PUT`  
+**URL:** `/api/departments/:id`  
+**Full URL:** `http://localhost:9400/api/departments/{department_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`  
+**Access Control:** Company-scoped users can only update departments from their own company
+
+**Path Parameters:**
+- `id` (string, required) - Department UUID
+
+**Request Body:**
+```json
+{
+  "name": "Engineering Updated",
+  "description": "Updated department description",
+  "headId": "new-head-uuid"
+}
+```
+
+**All Fields are Optional:**
+- `name` (string, optional) - Department name (must be unique within the company if changed)
+- `description` (string, optional) - Department description
+- `headId` (string, optional) - UUID of the employee who is the department head
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Department updated successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "department-uuid",
+    "companyId": "company-uuid",
+    "name": "Engineering Updated",
+    "description": "Updated department description",
+    "headId": "new-head-uuid",
+    "createdAt": "2025-01-14T10:30:00.000Z",
+    "updatedAt": "2025-01-15T11:00:00.000Z"
+  }
+}
+```
+
+**cURL:**
+```bash
+curl -X PUT http://localhost:9400/api/departments/{department_id} \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Engineering Updated",
+    "description": "Updated department description"
+  }'
+```
+
+**Error Responses:**
+- `404` - Not Found (department not found)
+- `409` - Conflict (department name already exists in this company if name is changed)
+- `403` - Forbidden (insufficient permissions or cannot update different company)
+
+---
+
+### 5. Delete Department
+
+**Method:** `DELETE`  
+**URL:** `/api/departments/:id`  
+**Full URL:** `http://localhost:9400/api/departments/{department_id}`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`  
+**Access Control:** Company-scoped users can only delete departments from their own company
+
+**Path Parameters:**
+- `id` (string, required) - Department UUID
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Department deleted successfully",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+```bash
+curl -X DELETE http://localhost:9400/api/departments/{department_id} \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `404` - Not Found (department not found)
+- `403` - Forbidden (insufficient permissions or cannot delete different company)
+
+**Note:** Deleting a department will permanently remove it from the database. Make sure no employees are assigned to this department before deletion.
 
 ---
 

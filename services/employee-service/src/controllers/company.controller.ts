@@ -3,6 +3,111 @@ import { CompanyService } from '../services/company.service';
 import { AccessControl, UserRole, ResponseFormatter, ValidationError } from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
 
+export const getAllCompanies = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const companies = await CompanyService.getAllCompanies();
+    ResponseFormatter.success(res, companies, 'Companies retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCompany = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    // Check access permissions
+    if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== id) {
+      return ResponseFormatter.error(res, 'Access denied: Cannot access different company', '', 403);
+    }
+
+    const company = await CompanyService.getCompanyById(id);
+    ResponseFormatter.success(res, company, 'Company retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createCompany = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { name, code, description, hrbpId } = req.body;
+
+    if (!name || !code) {
+      return ResponseFormatter.error(res, 'Name and code are required', '', 400);
+    }
+
+    const company = await CompanyService.createCompany({
+      name,
+      code,
+      description,
+      hrbpId,
+    });
+
+    ResponseFormatter.success(res, company, 'Company created successfully', '', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCompany = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    // Check access permissions
+    if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== id) {
+      return ResponseFormatter.error(res, 'Access denied: Cannot update different company', '', 403);
+    }
+
+    const { name, code, description, hrbpId, status } = req.body;
+
+    const company = await CompanyService.updateCompany(id, {
+      name,
+      code,
+      description,
+      hrbpId,
+      status,
+    });
+
+    ResponseFormatter.success(res, company, 'Company updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCompany = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await CompanyService.deleteCompany(id);
+    ResponseFormatter.success(res, null, 'Company deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const uploadCompanyProfileImage = async (
   req: EnrichedAuthRequest & { file?: { buffer: Buffer; originalname: string; mimetype: string } },
   res: Response,

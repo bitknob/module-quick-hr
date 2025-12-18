@@ -10,6 +10,7 @@ import {
   refreshToken,
   getCurrentUser,
 } from '../controllers/auth.controller';
+import { getMenu } from '../controllers/menu.controller';
 import { authenticate, authorize } from '../middleware/auth';
 import { UserRole } from '@hrm/common';
 
@@ -26,6 +27,7 @@ router.post('/refresh-token', refreshToken);
 router.use(authenticate);
 
 router.get('/me', getCurrentUser);
+router.get('/menu', getMenu);
 router.post('/change-password', changePassword);
 
 export default router;

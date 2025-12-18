@@ -14,7 +14,7 @@ export interface CompanyAttributes {
 }
 
 export interface CompanyCreationAttributes
-  extends Optional<CompanyAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+  extends Optional<CompanyAttributes, 'id' | 'createdAt' | 'updatedAt' | 'status'> {}
 
 export class Company
   extends Model<CompanyAttributes, CompanyCreationAttributes>

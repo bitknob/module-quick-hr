@@ -8,8 +8,9 @@ const app = express();
 const PORT = process.env.PORT || process.env.API_GATEWAY_PORT || 9400;
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// NOTE: Do NOT add body parsing middleware here (express.json() or express.urlencoded())
+// Body parsing consumes the request stream, which prevents the proxy from forwarding
+// the request body to downstream services. Each downstream service parses its own body.
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:9401';
 const EMPLOYEE_SERVICE_URL = process.env.EMPLOYEE_SERVICE_URL || 'http://localhost:9402';
@@ -32,9 +33,9 @@ app.use(
       if (res.headersSent) {
         return;
       }
-      
+
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
-      
+
       // Handle specific error codes
       if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
         res.status(503).json({
@@ -100,6 +101,48 @@ app.use(
 );
 
 app.use(
+  '/api/companies',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/companies': '/api/companies',
+    },
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+      });
+    },
+  })
+);
+
+app.use(
+  '/api/departments',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/departments': '/api/departments',
+    },
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+      });
+    },
+  })
+);
+
+app.use(
   '/api/devices',
   createProxyMiddleware({
     target: AUTH_SERVICE_URL,
@@ -142,4 +185,3 @@ app.listen(PORT, () => {
   logger.info(`Proxying auth service: ${AUTH_SERVICE_URL}`);
   logger.info(`Proxying employee service: ${EMPLOYEE_SERVICE_URL}`);
 });
-
