@@ -3,7 +3,6 @@ import { Company } from '../models/Company.model';
 export class CompanyQueries {
   static async findAll(): Promise<Company[]> {
     return await Company.findAll({
-      where: { status: 'active' },
       order: [['name', 'ASC']],
     });
   }

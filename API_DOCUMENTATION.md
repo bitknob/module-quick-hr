@@ -1249,6 +1249,10 @@ All company endpoints require authentication.
 **Authentication:** Required  
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
+**Notes:**
+- Returns all companies regardless of status (both active and inactive)
+- Results are sorted alphabetically by company name
+
 **Response (200):**
 ```json
 {
@@ -1279,6 +1283,17 @@ All company endpoints require authentication.
       "status": "active",
       "createdAt": "2025-01-15T10:30:00.000Z",
       "updatedAt": "2025-01-15T10:30:00.000Z"
+    },
+    {
+      "id": "company-uuid-3",
+      "name": "Old Company Ltd",
+      "code": "OLD001",
+      "description": "Inactive company",
+      "profileImageUrl": null,
+      "hrbpId": null,
+      "status": "inactive",
+      "createdAt": "2024-01-01T10:30:00.000Z",
+      "updatedAt": "2024-12-01T10:30:00.000Z"
     }
   ]
 }

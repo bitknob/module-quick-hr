@@ -67,17 +67,18 @@ export class SearchService {
       });
 
       employees.forEach((emp) => {
+        const empData = emp.toJSON ? emp.toJSON() : emp;
         results.push({
           type: 'employee',
-          id: emp.id,
-          title: `${emp.firstName} ${emp.lastName}`,
-          subtitle: `${emp.jobTitle} • ${emp.department}`,
-          path: `/dashboard/employees/${emp.id}`,
+          id: empData.id,
+          title: `${empData.firstName || ''} ${empData.lastName || ''}`.trim(),
+          subtitle: `${empData.jobTitle || ''} • ${empData.department || ''}`,
+          path: `/dashboard/employees/${empData.id}`,
           icon: 'user',
           metadata: {
-            email: emp.email,
-            employeeId: emp.employeeId,
-            companyId: emp.companyId,
+            email: empData.email,
+            employeeId: empData.employeeId,
+            companyId: empData.companyId,
           },
         });
       });
@@ -89,7 +90,6 @@ export class SearchService {
       
       const companies = await Company.findAll({
         where: {
-          status: 'active',
           [Op.or]: [
             { name: { [Op.iLike]: `%${searchLower}%` } },
             { code: { [Op.iLike]: `%${searchLower}%` } },
@@ -98,20 +98,32 @@ export class SearchService {
         },
         limit: companyLimit,
         order: [['name', 'ASC']],
-        attributes: ['id', 'name', 'code', 'description'],
       });
 
       companies.forEach((company) => {
+        // Access properties directly from Sequelize model instance
+        const id = (company as Company).id;
+        const name = (company as Company).name;
+        const code = (company as Company).code;
+        const status = (company as Company).status || 'active';
+        const description = (company as Company).description;
+        
+        // Skip if essential fields are missing
+        if (!id || !name) {
+          return;
+        }
+        
         results.push({
           type: 'company',
-          id: company.id,
-          title: company.name,
-          subtitle: company.code,
-          path: `/dashboard/companies/${company.id}`,
+          id: id,
+          title: name,
+          subtitle: code ? `${code}${status === 'inactive' ? ' (Inactive)' : ''}` : (status === 'inactive' ? '(Inactive)' : ''),
+          path: `/dashboard/companies/${id}`,
           icon: 'building',
           metadata: {
-            code: company.code,
-            description: company.description,
+            code: code || null,
+            description: description || null,
+            status: status,
           },
         });
       });
@@ -136,16 +148,17 @@ export class SearchService {
       });
 
       departments.forEach((dept) => {
+        const deptData = dept.toJSON ? dept.toJSON() : dept;
         results.push({
           type: 'department',
-          id: dept.id,
-          title: dept.name,
-          subtitle: dept.description || undefined,
-          path: `/dashboard/departments/${dept.id}`,
+          id: deptData.id,
+          title: deptData.name || '',
+          subtitle: deptData.description || undefined,
+          path: `/dashboard/departments/${deptData.id}`,
           icon: 'sitemap',
           metadata: {
-            companyId: dept.companyId,
-            description: dept.description,
+            companyId: deptData.companyId,
+            description: deptData.description,
           },
         });
       });
