@@ -160,12 +160,23 @@ MIGRATIONS_RUN=false
 
 if command -v psql &> /dev/null; then
     export PGPASSWORD=$DB_PASSWORD
-    TABLE_EXISTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Users');" 2>/dev/null)
+    USERS_TABLE_EXISTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Users');" 2>/dev/null)
+    ROLES_TABLE_EXISTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Roles');" 2>/dev/null)
     unset PGPASSWORD
     
-    if [ "$TABLE_EXISTS" = "t" ]; then
+    if [ "$USERS_TABLE_EXISTS" = "t" ] && [ "$ROLES_TABLE_EXISTS" = "t" ]; then
         echo -e "${GREEN}Database tables exist. Migrations appear to have been run.${NC}"
         MIGRATIONS_RUN=true
+    elif [ "$USERS_TABLE_EXISTS" = "t" ] && [ "$ROLES_TABLE_EXISTS" != "t" ]; then
+        echo -e "${YELLOW}Roles table not found. Running migrations to update schema...${NC}"
+        npm run db:migrate
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Migrations completed successfully!${NC}"
+            MIGRATIONS_RUN=true
+        else
+            echo -e "${RED}Migration failed!${NC}"
+            echo -e "${YELLOW}Please check database connection and run 'npm run db:migrate' manually.${NC}"
+        fi
     else
         echo -e "${YELLOW}Database tables not found. Running migrations...${NC}"
         npm run db:migrate
@@ -179,10 +190,20 @@ if command -v psql &> /dev/null; then
     fi
 elif command -v docker &> /dev/null && docker ps | grep -q hrm-postgres; then
     # Try to check via Docker
-    TABLE_EXISTS=$(docker exec hrm-postgres psql -U postgres -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Users');" 2>/dev/null)
-    if [ "$TABLE_EXISTS" = "t" ]; then
+    USERS_TABLE_EXISTS=$(docker exec hrm-postgres psql -U postgres -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Users');" 2>/dev/null)
+    ROLES_TABLE_EXISTS=$(docker exec hrm-postgres psql -U postgres -d $DB_NAME -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Roles');" 2>/dev/null)
+    if [ "$USERS_TABLE_EXISTS" = "t" ] && [ "$ROLES_TABLE_EXISTS" = "t" ]; then
         echo -e "${GREEN}Database tables exist (checked via Docker). Migrations appear to have been run.${NC}"
         MIGRATIONS_RUN=true
+    elif [ "$USERS_TABLE_EXISTS" = "t" ] && [ "$ROLES_TABLE_EXISTS" != "t" ]; then
+        echo -e "${YELLOW}Roles table not found. Running migrations to update schema...${NC}"
+        npm run db:migrate
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Migrations completed successfully!${NC}"
+            MIGRATIONS_RUN=true
+        else
+            echo -e "${YELLOW}Migration check failed. Please ensure migrations have been run.${NC}"
+        fi
     else
         echo -e "${YELLOW}Database tables not found. Running migrations...${NC}"
         npm run db:migrate

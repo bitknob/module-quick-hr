@@ -98,32 +98,28 @@ export class SearchService {
         },
         limit: companyLimit,
         order: [['name', 'ASC']],
+        attributes: ['id', 'name', 'code', 'description', 'status'],
       });
 
       companies.forEach((company) => {
-        // Access properties directly from Sequelize model instance
-        const id = (company as Company).id;
-        const name = (company as Company).name;
-        const code = (company as Company).code;
-        const status = (company as Company).status || 'active';
-        const description = (company as Company).description;
+        const companyData = company.toJSON ? company.toJSON() : company;
         
         // Skip if essential fields are missing
-        if (!id || !name) {
+        if (!companyData.id || !companyData.name) {
           return;
         }
         
         results.push({
           type: 'company',
-          id: id,
-          title: name,
-          subtitle: code ? `${code}${status === 'inactive' ? ' (Inactive)' : ''}` : (status === 'inactive' ? '(Inactive)' : ''),
-          path: `/dashboard/companies/${id}`,
+          id: companyData.id,
+          title: companyData.name,
+          subtitle: companyData.code ? `${companyData.code}${companyData.status === 'inactive' ? ' (Inactive)' : ''}` : (companyData.status === 'inactive' ? '(Inactive)' : ''),
+          path: `/dashboard/companies/${companyData.id}`,
           icon: 'building',
           metadata: {
-            code: code || null,
-            description: description || null,
-            status: status,
+            code: companyData.code || null,
+            description: companyData.description || null,
+            status: companyData.status || 'active',
           },
         });
       });

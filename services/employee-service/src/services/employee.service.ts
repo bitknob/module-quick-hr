@@ -30,19 +30,25 @@ export class EmployeeService {
       throw new ConflictError('Email already exists');
     }
 
-    if (data.managerId) {
-      const manager = await EmployeeQueries.findById(data.managerId, data.companyId);
+    // Normalize empty strings to null/undefined for optional fields
+    const normalizedData = {
+      ...data,
+      managerId: data.managerId && data.managerId.trim() !== '' ? data.managerId : undefined,
+    };
+
+    if (normalizedData.managerId) {
+      const manager = await EmployeeQueries.findById(normalizedData.managerId, normalizedData.companyId);
       if (!manager) {
         throw new NotFoundError('Manager');
       }
 
-      if (manager.companyId !== data.companyId) {
+      if (manager.companyId !== normalizedData.companyId) {
         throw new ValidationError('Manager must be from the same company');
       }
 
       const hasCycle = await EmployeeQueries.checkCycle(
-        data.managerId,
-        data.managerId
+        normalizedData.managerId,
+        normalizedData.managerId
       );
       if (hasCycle) {
         throw new ValidationError('Cannot assign manager: would create a cycle in hierarchy');
@@ -51,7 +57,7 @@ export class EmployeeService {
 
     return await Employee.create({
       id: uuidv4(),
-      ...data,
+      ...normalizedData,
       status: 'active',
     });
   }
@@ -93,27 +99,44 @@ export class EmployeeService {
       throw new NotFoundError('Employee');
     }
 
-    if (data.managerId && data.managerId !== employee.managerId) {
-      if (data.managerId === id) {
+    // Normalize empty strings to null/undefined for optional fields
+    const managerIdValue = data.managerId !== undefined 
+      ? (data.managerId && data.managerId.toString().trim() !== '' ? data.managerId : null)
+      : undefined;
+
+    // Build update object, excluding managerId from spread to handle it separately
+    const { managerId, ...restData } = data;
+    const updateData: Record<string, any> = { ...restData };
+    
+    // Handle managerId separately to support null values (Sequelize accepts null at runtime)
+    if (managerIdValue !== undefined) {
+      updateData.managerId = managerIdValue;
+    }
+
+    // Only validate manager if a new managerId is being set (not null/undefined)
+    if (managerIdValue !== undefined && managerIdValue !== employee.managerId) {
+      if (managerIdValue === null) {
+        // Setting managerId to null is allowed (removing manager)
+      } else if (managerIdValue === id) {
         throw new ValidationError('Employee cannot be their own manager');
-      }
+      } else {
+        const manager = await EmployeeQueries.findById(managerIdValue, employee.companyId);
+        if (!manager) {
+          throw new NotFoundError('Manager');
+        }
 
-      const manager = await EmployeeQueries.findById(data.managerId, employee.companyId);
-      if (!manager) {
-        throw new NotFoundError('Manager');
-      }
+        if (manager.companyId !== employee.companyId) {
+          throw new ValidationError('Manager must be from the same company');
+        }
 
-      if (manager.companyId !== employee.companyId) {
-        throw new ValidationError('Manager must be from the same company');
-      }
-
-      const hasCycle = await EmployeeQueries.checkCycle(id, data.managerId);
-      if (hasCycle) {
-        throw new ValidationError('Cannot assign manager: would create a cycle in hierarchy');
+        const hasCycle = await EmployeeQueries.checkCycle(id, managerIdValue);
+        if (hasCycle) {
+          throw new ValidationError('Cannot assign manager: would create a cycle in hierarchy');
+        }
       }
     }
 
-    await Employee.update(data, { where: { id } });
+    await Employee.update(updateData as any, { where: { id } });
     return await EmployeeQueries.findById(id, companyId) as Employee;
   }
 

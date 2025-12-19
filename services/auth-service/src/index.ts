@@ -7,6 +7,7 @@ import { initializeEmailService } from './config/email';
 import { RequestLogModel } from './models/RequestLog.model';
 import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
+import roleRoutes from './routes/role.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 9401;
@@ -88,8 +89,24 @@ const startServer = async () => {
       // Continue server startup even if email service fails
     }
     
+    // Initialize system roles, but don't block server startup if it fails
+    try {
+      const { RoleService } = await import('./services/role.service');
+      await RoleService.initializeSystemRoles();
+      logger.info('System roles initialized successfully');
+    } catch (error: any) {
+      // Check if error is due to missing Roles table
+      if (error?.original?.code === '42P01' || error?.code === '42P01') {
+        logger.warn('Roles table does not exist. Please run database migrations: npm run db:migrate');
+      } else {
+        logger.warn('System roles initialization failed:', error);
+      }
+      // Continue server startup even if role initialization fails
+    }
+    
     app.use('/api/auth', authRoutes);
-app.use('/api/devices', deviceRoutes);
+    app.use('/api/devices', deviceRoutes);
+    app.use('/api/roles', roleRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

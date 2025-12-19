@@ -269,6 +269,57 @@ export class MenuService {
             UserRole.PROVIDER_ADMIN,
           ],
         },
+        {
+          id: 'settings-roles',
+          label: 'Role Management',
+          path: '/dashboard/settings/roles',
+          roles: [
+            UserRole.SUPER_ADMIN,
+            UserRole.PROVIDER_ADMIN,
+          ],
+        },
+      ],
+    },
+    {
+      id: 'roles',
+      label: 'Roles',
+      path: '/dashboard/roles',
+      icon: 'shield',
+      roles: [
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+      ],
+      children: [
+        {
+          id: 'roles-list',
+          label: 'All Roles',
+          path: '/dashboard/roles',
+          roles: [
+            UserRole.SUPER_ADMIN,
+            UserRole.PROVIDER_ADMIN,
+            UserRole.PROVIDER_HR_STAFF,
+          ],
+        },
+        {
+          id: 'roles-create',
+          label: 'Create Role',
+          path: '/dashboard/roles/create',
+          roles: [
+            UserRole.SUPER_ADMIN,
+            UserRole.PROVIDER_ADMIN,
+          ],
+        },
+        {
+          id: 'roles-hierarchy',
+          label: 'Role Hierarchy',
+          path: '/dashboard/roles/hierarchy',
+          roles: [
+            UserRole.SUPER_ADMIN,
+            UserRole.PROVIDER_ADMIN,
+            UserRole.PROVIDER_HR_STAFF,
+          ],
+        },
       ],
     },
   ];

@@ -78,8 +78,8 @@ export const checkEmployeeAccess = () => {
     next: NextFunction
   ): Promise<void> => {
     try {
-      if (!req.user?.role || !req.employee) {
-        return next(new ForbiddenError('Employee context not found'));
+      if (!req.user?.role) {
+        return next(new ForbiddenError('User role not found'));
       }
 
       const userRole = req.user.role as UserRole;
@@ -87,6 +87,16 @@ export const checkEmployeeAccess = () => {
 
       if (!targetEmployeeId) {
         return next();
+      }
+
+      // Super admins and provider admins can access all employees without employee context
+      if (AccessControl.canAccessAllCompanies(userRole)) {
+        return next();
+      }
+
+      // For other roles, employee context is required
+      if (!req.employee) {
+        return next(new ForbiddenError('Employee context not found'));
       }
 
       const targetEmployee = await EmployeeQueries.findById(targetEmployeeId);
@@ -98,10 +108,6 @@ export const checkEmployeeAccess = () => {
         if (req.employee.id !== targetEmployeeId) {
           return next(new ForbiddenError('Access denied: Can only access own data'));
         }
-        return next();
-      }
-
-      if (AccessControl.canAccessAllCompanies(userRole)) {
         return next();
       }
 

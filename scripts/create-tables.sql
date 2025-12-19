@@ -406,3 +406,45 @@ CREATE TRIGGER update_approval_requests_updated_at BEFORE UPDATE ON "ApprovalReq
 
 CREATE TRIGGER update_approval_steps_updated_at BEFORE UPDATE ON "ApprovalSteps"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Roles Table (Custom Role Management with Hierarchy)
+CREATE TABLE IF NOT EXISTS "Roles" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "roleKey" VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    "hierarchyLevel" INTEGER NOT NULL CHECK ("hierarchyLevel" >= 1 AND "hierarchyLevel" <= 8),
+    "parentRoleId" UUID,
+    "companyId" UUID,
+    "isSystemRole" BOOLEAN DEFAULT false,
+    "isActive" BOOLEAN DEFAULT true,
+    permissions JSONB DEFAULT '{}',
+    "menuAccess" JSONB DEFAULT '[]',
+    "canAccessAllCompanies" BOOLEAN DEFAULT false,
+    "canAccessMultipleCompanies" BOOLEAN DEFAULT false,
+    "canAccessSingleCompany" BOOLEAN DEFAULT false,
+    "canManageCompanies" BOOLEAN DEFAULT false,
+    "canCreateCompanies" BOOLEAN DEFAULT false,
+    "canManageProviderStaff" BOOLEAN DEFAULT false,
+    "canManageEmployees" BOOLEAN DEFAULT false,
+    "canApproveLeaves" BOOLEAN DEFAULT false,
+    "canViewPayroll" BOOLEAN DEFAULT false,
+    "createdBy" UUID,
+    "updatedBy" UUID,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_role_parent FOREIGN KEY ("parentRoleId") REFERENCES "Roles"(id) ON DELETE SET NULL,
+    CONSTRAINT fk_role_company FOREIGN KEY ("companyId") REFERENCES "Companies"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_role_created_by FOREIGN KEY ("createdBy") REFERENCES "Users"(id) ON DELETE SET NULL,
+    CONSTRAINT fk_role_updated_by FOREIGN KEY ("updatedBy") REFERENCES "Users"(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_roles_role_key ON "Roles"("roleKey");
+CREATE INDEX IF NOT EXISTS idx_roles_hierarchy_level ON "Roles"("hierarchyLevel");
+CREATE INDEX IF NOT EXISTS idx_roles_parent_role_id ON "Roles"("parentRoleId");
+CREATE INDEX IF NOT EXISTS idx_roles_company_id ON "Roles"("companyId");
+CREATE INDEX IF NOT EXISTS idx_roles_is_system_role ON "Roles"("isSystemRole");
+CREATE INDEX IF NOT EXISTS idx_roles_is_active ON "Roles"("isActive");
+
+CREATE TRIGGER update_roles_updated_at BEFORE UPDATE ON "Roles"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

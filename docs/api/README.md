@@ -18,6 +18,7 @@ This API documentation is organized by module for easier navigation and maintena
 - [Global Search](./08-search.md) - Multi-entity search functionality
 - [Health Check](./09-health.md) - Service health endpoints
 - [Common Information](./10-common.md) - Error responses, authentication flow, access control, notes
+- [Role Management](./11-roles.md) - Role management with hierarchy, permissions, and menu access
 
 ## Quick Start
 

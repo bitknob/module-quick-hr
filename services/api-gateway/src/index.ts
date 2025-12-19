@@ -184,6 +184,45 @@ app.use(
   })
 );
 
+app.use(
+  '/api/roles',
+  createProxyMiddleware({
+    target: AUTH_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/roles': '/api/roles',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${AUTH_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
 app.get('/health', (req, res) => {
   ResponseFormatter.success(
     res,
