@@ -1,5 +1,7 @@
 # Introduction
 
+[← Back to API Documentation Index](./README.md)
+
 ## Base URL
 
 Base URL: `http://localhost:9400` (API Gateway)
@@ -38,5 +40,5 @@ All HTTP requests and responses are automatically logged to the database for aud
 
 **Note**: Sensitive data (passwords, tokens, API keys) is automatically sanitized before logging. Logging is non-blocking and does not affect API performance.
 
-For detailed information about request logging, see [Common Information](10-common.md#request-logging-details).
+For detailed information about request logging, see [Common Information](./10-common.md#request-logging-details).
 

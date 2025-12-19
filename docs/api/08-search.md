@@ -1,6 +1,6 @@
 # Global Search Endpoint
 
-[← Back to API Documentation Index](README.md)
+[← Back to API Documentation Index](./README.md)
 
 
 Base Path: `/api/search`

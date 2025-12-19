@@ -1,6 +1,6 @@
 # Department Service Endpoints
 
-[← Back to API Documentation Index](README.md)
+[← Back to API Documentation Index](./README.md)
 
 
 Base Path: `/api/departments`
