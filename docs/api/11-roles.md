@@ -37,6 +37,165 @@ System roles cannot be modified or deleted.
 
 ---
 
+## User Roles and Hierarchy Diagram
+
+### Visual Hierarchy Structure
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ROLE HIERARCHY (Level 1-8)                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Level 1: ┌──────────────────────────────────────────────────────────────┐
+         │  SUPER ADMIN                                                   │
+         │  • Full system access                                         │
+         │  • Can manage all companies                                   │
+         │  • Unrestricted access to all data                            │
+         │  • Can override approval workflows                            │
+         │  • View/edit any employee records                             │
+         │  • Configure system-wide settings                              │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 2: ┌──────────────────────────────────────────────────────────────┐
+         │  PROVIDER ADMIN                                               │
+         │  • Manages provider HR team                                  │
+         │  • Access to all companies                                   │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 3: ┌──────────────────────────────────────────────────────────────┐
+         │  PROVIDER HR STAFF                                            │
+         │  • Handles shared services                                   │
+         │  • Access to multiple/all companies                          │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 4: ┌──────────────────────────────────────────────────────────────┐
+         │  HRBP (HR Business Partner)                                   │
+         │  • Dedicated HR Business Partner                             │
+         │  • Assigned to one company                                   │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 5: ┌──────────────────────────────────────────────────────────────┐
+         │  COMPANY ADMIN                                                │
+         │  • Local admin within one company                             │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 6: ┌──────────────────────────────────────────────────────────────┐
+         │  DEPARTMENT HEAD                                              │
+         │  • Top-level manager within company                           │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 7: ┌──────────────────────────────────────────────────────────────┐
+         │  MANAGER                                                      │
+         │  • Direct reporting manager                                  │
+         └──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Level 8: ┌──────────────────────────────────────────────────────────────┐
+         │  EMPLOYEE                                                     │
+         │  • Base level, self-service only                             │
+         └──────────────────────────────────────────────────────────────┘
+```
+
+### Role Hierarchy Table
+
+| Level | Role Key | Role Name | Description | Access Scope | Key Capabilities |
+|-------|----------|-----------|-------------|--------------|------------------|
+| **1** | `super_admin` | **Super Admin** | Full system access, can manage all companies. Has unrestricted access to all data and can override approval workflows, view/edit any employee records, and configure system-wide settings across all companies. | All Companies | • Manage all companies<br>• Override approvals<br>• System-wide configuration<br>• Full data access |
+| **2** | `provider_admin` | **Provider Admin** | Manages provider HR team, access to all companies | All Companies | • Manage provider HR staff<br>• Access all companies<br>• Manage employees across companies |
+| **3** | `provider_hr_staff` | **Provider HR Staff** | Handles shared services, access to multiple/all companies | Multiple/All Companies | • Shared HR services<br>• Cross-company access<br>• Employee management |
+| **4** | `hrbp` | **HRBP** | Dedicated HR Business Partner, assigned to one company | Single Company | • Company-specific HR support<br>• Employee management<br>• Approval workflows |
+| **5** | `company_admin` | **Company Admin** | Local admin within one company | Single Company | • Company administration<br>• Employee management<br>• Department management |
+| **6** | `department_head` | **Department Head** | Top-level manager within company | Single Company (Department) | • Department oversight<br>• Team management<br>• Approval authority |
+| **7** | `manager` | **Manager** | Direct reporting manager | Single Company (Team) | • Direct team management<br>• Approval authority<br>• Team oversight |
+| **8** | `employee` | **Employee** | Base level, self-service only | Self Only | • Self-service access<br>• Own data access<br>• Request submissions |
+
+### Access Control Matrix
+
+| Role | All Companies | Multiple Companies | Single Company | Own Data | Manage Employees | Approve Leaves | View Payroll | System Settings |
+|------|---------------|-------------------|----------------|----------|------------------|---------------|--------------|-----------------|
+| **Super Admin** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Provider Admin** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Provider HR Staff** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **HRBP** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Company Admin** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Department Head** | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Manager** | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Employee** | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+### Hierarchy Flow Diagram
+
+```
+                    ┌─────────────────┐
+                    │  SUPER ADMIN     │  Level 1
+                    │  (System-wide)   │
+                    └────────┬─────────┘
+                             │
+                    ┌────────▼─────────┐
+                    │ PROVIDER ADMIN    │  Level 2
+                    │ (All Companies)   │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │ PROVIDER HR STAFF │  Level 3
+                    │ (Multi-Company)    │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │      HRBP         │  Level 4
+                    │  (One Company)    │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  COMPANY ADMIN    │  Level 5
+                    │  (One Company)    │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │ DEPARTMENT HEAD   │  Level 6
+                    │  (Department)     │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │     MANAGER       │  Level 7
+                    │   (Direct Team)   │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │     EMPLOYEE      │  Level 8
+                    │   (Self Only)     │
+                    └───────────────────┘
+```
+
+### Role Permissions Summary
+
+**Provider Level Roles (Levels 1-3):**
+- Access to multiple or all companies
+- System-wide or cross-company operations
+- Higher-level administrative functions
+
+**Company Level Roles (Levels 4-5):**
+- Restricted to a single company
+- Company-specific administration
+- Full employee management within company
+
+**Department/Team Level Roles (Levels 6-7):**
+- Restricted to specific departments or teams
+- Team management and approvals
+- Limited to their organizational unit
+
+**Individual Level (Level 8):**
+- Self-service only
+- Access to own data and requests
+- No management capabilities
+
+---
+
 ## 1. Initialize System Roles
 
 **Method:** `GET`  
