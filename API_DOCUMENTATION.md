@@ -1,5 +1,25 @@
 # API Documentation
 
+> **Note:** This documentation has been reorganized into separate module files for better maintainability.
+> 
+> **Please see:** [docs/api/README.md](docs/api/README.md) for the new documentation structure.
+> 
+> The documentation is now split into the following modules:
+> - [Introduction](docs/api/01-introduction.md)
+> - [Auth Service](docs/api/02-auth.md)
+> - [Device Management](docs/api/03-devices.md)
+> - [Approval System](docs/api/04-approvals.md)
+> - [Company Service](docs/api/05-companies.md)
+> - [Department Service](docs/api/06-departments.md)
+> - [Employee Service](docs/api/07-employees.md)
+> - [Global Search](docs/api/08-search.md)
+> - [Health Check](docs/api/09-health.md)
+> - [Common Information](docs/api/10-common.md)
+
+---
+
+## Legacy Documentation (Below)
+
 Base URL: `http://localhost:9400` (API Gateway)
 
 All endpoints return a standardized response format:
