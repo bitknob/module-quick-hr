@@ -13,7 +13,7 @@ export const getMenu = async (
     }
 
     const role = req.user.role as UserRole;
-    const menu = MenuService.getMenuForRole(role);
+    const menu = await MenuService.getMenuForRole(role);
 
     ResponseFormatter.success(res, menu, 'Menu retrieved successfully');
   } catch (error) {

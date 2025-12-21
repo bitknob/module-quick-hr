@@ -51,7 +51,7 @@ export const createDepartment = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { companyId, name, description, headId } = req.body;
+    const { companyId, name, description, headId, parentDepartmentId, hasSubDepartments } = req.body;
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
@@ -68,6 +68,8 @@ export const createDepartment = async (
       name,
       description,
       headId,
+      parentDepartmentId,
+      hasSubDepartments,
     });
 
     ResponseFormatter.success(res, department, 'Department created successfully', '', 201);
@@ -86,13 +88,15 @@ export const updateDepartment = async (
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
-    const { name, description, headId } = req.body;
+    const { name, description, headId, parentDepartmentId, hasSubDepartments } = req.body;
 
     const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
     const department = await DepartmentService.updateDepartment(id, {
       name,
       description,
       headId,
+      parentDepartmentId,
+      hasSubDepartments,
     }, companyId);
 
     ResponseFormatter.success(res, department, 'Department updated successfully');
@@ -114,6 +118,49 @@ export const deleteDepartment = async (
     const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
     await DepartmentService.deleteDepartment(id, companyId);
     ResponseFormatter.success(res, null, 'Department deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSubDepartments = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
+    const subDepartments = await DepartmentService.getSubDepartments(id, companyId);
+    ResponseFormatter.success(res, subDepartments, 'Sub-departments retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTopLevelDepartments = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { companyId } = req.query;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    if (!companyId) {
+      return ResponseFormatter.error(res, 'Company ID is required', '', 400);
+    }
+
+    if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== companyId) {
+      return ResponseFormatter.error(res, 'Access denied: Cannot access departments from different company', '', 403);
+    }
+
+    const departments = await DepartmentService.getTopLevelDepartments(companyId as string);
+    ResponseFormatter.success(res, departments, 'Top-level departments retrieved successfully');
   } catch (error) {
     next(error);
   }

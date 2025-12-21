@@ -8,6 +8,8 @@ export interface DepartmentAttributes {
   name: string;
   description?: string;
   headId?: string;
+  parentDepartmentId?: string;
+  hasSubDepartments?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -24,10 +26,14 @@ export class Department
   public name!: string;
   public description?: string;
   public headId?: string;
+  public parentDepartmentId?: string;
+  public hasSubDepartments?: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
   public company?: Company;
+  public parentDepartment?: Department;
+  public subDepartments?: Department[];
 }
 
 Department.init(
@@ -57,6 +63,18 @@ Department.init(
       type: DataTypes.UUID,
       allowNull: true,
     },
+    parentDepartmentId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Departments',
+        key: 'id',
+      },
+    },
+    hasSubDepartments: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -74,6 +92,7 @@ Department.init(
     indexes: [
       { fields: ['companyId', 'name'], unique: true },
       { fields: ['companyId'] },
+      { fields: ['parentDepartmentId'] },
     ],
   }
 );
@@ -81,6 +100,16 @@ Department.init(
 Department.belongsTo(Company, {
   foreignKey: 'companyId',
   as: 'company',
+});
+
+Department.belongsTo(Department, {
+  foreignKey: 'parentDepartmentId',
+  as: 'parentDepartment',
+});
+
+Department.hasMany(Department, {
+  foreignKey: 'parentDepartmentId',
+  as: 'subDepartments',
 });
 
 Company.hasMany(Department, {

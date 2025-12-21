@@ -14,6 +14,7 @@ app.use(cors());
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:9401';
 const EMPLOYEE_SERVICE_URL = process.env.EMPLOYEE_SERVICE_URL || 'http://localhost:9402';
+const PAYROLL_SERVICE_URL = process.env.PAYROLL_SERVICE_URL || 'http://localhost:9403';
 
 app.use(
   '/api/auth',
@@ -223,6 +224,45 @@ app.use(
   })
 );
 
+app.use(
+  '/api/payroll',
+  createProxyMiddleware({
+    target: PAYROLL_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/payroll': '/api/payroll',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${PAYROLL_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
 app.get('/health', (req, res) => {
   ResponseFormatter.success(
     res,
@@ -232,6 +272,7 @@ app.get('/health', (req, res) => {
       services: {
         auth: AUTH_SERVICE_URL,
         employee: EMPLOYEE_SERVICE_URL,
+        payroll: PAYROLL_SERVICE_URL,
       },
     },
     'API Gateway is healthy'
@@ -244,4 +285,5 @@ app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
   logger.info(`Proxying auth service: ${AUTH_SERVICE_URL}`);
   logger.info(`Proxying employee service: ${EMPLOYEE_SERVICE_URL}`);
+  logger.info(`Proxying payroll service: ${PAYROLL_SERVICE_URL}`);
 });

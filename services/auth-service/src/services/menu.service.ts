@@ -1,4 +1,7 @@
 import { UserRole } from '@hrm/common';
+import { MenuQueries } from '../queries/menu.queries';
+import { Menu } from '../models/Menu.model';
+import { MenuRole } from '../models/MenuRole.model';
 
 export interface MenuItem {
   id: string;
@@ -18,349 +21,142 @@ export type MenuItemWithoutRoles = {
 };
 
 export class MenuService {
-  private static readonly ALL_MENU_ITEMS: MenuItem[] = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      path: '/dashboard',
-      icon: 'home',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-        UserRole.EMPLOYEE,
-      ],
-    },
-    {
-      id: 'companies',
-      label: 'Companies',
-      path: '/dashboard/companies',
-      icon: 'building',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-      ],
-    },
-    {
-      id: 'employees',
-      label: 'Employees',
-      path: '/dashboard/employees',
-      icon: 'users',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-      ],
-      children: [
-        {
-          id: 'employees-list',
-          label: 'All Employees',
-          path: '/dashboard/employees',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-          ],
-        },
-        {
-          id: 'employees-create',
-          label: 'Create Employee',
-          path: '/dashboard/employees/create',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'departments',
-      label: 'Departments',
-      path: '/dashboard/departments',
-      icon: 'sitemap',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-      ],
-    },
-    {
-      id: 'approvals',
-      label: 'Approvals',
-      path: '/dashboard/approvals',
-      icon: 'check-circle',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-      ],
-      children: [
-        {
-          id: 'approvals-pending',
-          label: 'Pending Approvals',
-          path: '/dashboard/approvals/pending',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-            UserRole.DEPARTMENT_HEAD,
-            UserRole.MANAGER,
-          ],
-        },
-        {
-          id: 'approvals-all',
-          label: 'All Approvals',
-          path: '/dashboard/approvals',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'leave',
-      label: 'Leave',
-      path: '/dashboard/leave',
-      icon: 'calendar',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-        UserRole.EMPLOYEE,
-      ],
-      children: [
-        {
-          id: 'leave-requests',
-          label: 'My Leave Requests',
-          path: '/dashboard/leave/requests',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-            UserRole.DEPARTMENT_HEAD,
-            UserRole.MANAGER,
-            UserRole.EMPLOYEE,
-          ],
-        },
-        {
-          id: 'leave-create',
-          label: 'Request Leave',
-          path: '/dashboard/leave/create',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-            UserRole.DEPARTMENT_HEAD,
-            UserRole.MANAGER,
-            UserRole.EMPLOYEE,
-          ],
-        },
-        {
-          id: 'leave-all',
-          label: 'All Leave Requests',
-          path: '/dashboard/leave',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'attendance',
-      label: 'Attendance',
-      path: '/dashboard/attendance',
-      icon: 'clock',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-        UserRole.EMPLOYEE,
-      ],
-    },
-    {
-      id: 'profile',
-      label: 'Profile',
-      path: '/dashboard/profile',
-      icon: 'user',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-        UserRole.DEPARTMENT_HEAD,
-        UserRole.MANAGER,
-        UserRole.EMPLOYEE,
-      ],
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      path: '/dashboard/settings',
-      icon: 'settings',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-        UserRole.HRBP,
-        UserRole.COMPANY_ADMIN,
-      ],
-      children: [
-        {
-          id: 'settings-general',
-          label: 'General',
-          path: '/dashboard/settings/general',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-            UserRole.HRBP,
-            UserRole.COMPANY_ADMIN,
-          ],
-        },
-        {
-          id: 'settings-users',
-          label: 'Users',
-          path: '/dashboard/settings/users',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-          ],
-        },
-        {
-          id: 'settings-roles',
-          label: 'Role Management',
-          path: '/dashboard/settings/roles',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'roles',
-      label: 'Roles',
-      path: '/dashboard/roles',
-      icon: 'shield',
-      roles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.PROVIDER_ADMIN,
-        UserRole.PROVIDER_HR_STAFF,
-      ],
-      children: [
-        {
-          id: 'roles-list',
-          label: 'All Roles',
-          path: '/dashboard/roles',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-          ],
-        },
-        {
-          id: 'roles-create',
-          label: 'Create Role',
-          path: '/dashboard/roles/create',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-          ],
-        },
-        {
-          id: 'roles-hierarchy',
-          label: 'Role Hierarchy',
-          path: '/dashboard/roles/hierarchy',
-          roles: [
-            UserRole.SUPER_ADMIN,
-            UserRole.PROVIDER_ADMIN,
-            UserRole.PROVIDER_HR_STAFF,
-          ],
-        },
-      ],
-    },
-  ];
+  static async getMenuForRole(role: UserRole): Promise<MenuItemWithoutRoles[]> {
+    const roleKey = role as string;
+    const menus = await MenuQueries.findByRole(roleKey);
 
-  static getMenuForRole(role: UserRole): MenuItemWithoutRoles[] {
-    return this.ALL_MENU_ITEMS
-      .filter((item) => item.roles.includes(role))
-      .map((item): MenuItemWithoutRoles => {
+    if (!menus || menus.length === 0) {
+      return [];
+    }
+
+    const result = this.buildMenuTree(menus, roleKey);
+    return result;
+  }
+
+  private static buildMenuTree(menus: Menu[], roleKey: string): MenuItemWithoutRoles[] {
+    return menus
+      .map((menu): MenuItemWithoutRoles | null => {
+        const menuData = menu.toJSON ? menu.toJSON() : (menu as any);
+        const menuId = menuData.id;
+        const menuLabel = menuData.label;
+        const menuPath = menuData.path;
+        const menuIcon = menuData.icon;
+
+        if (!menuId || !menuLabel || !menuPath) {
+          return null;
+        }
+
         const menuItem: MenuItemWithoutRoles = {
-          id: item.id,
-          label: item.label,
-          path: item.path,
-          icon: item.icon,
+          id: menuId,
+          label: menuLabel,
+          path: menuPath,
         };
 
-        if (item.children) {
-          const accessibleChildren: MenuItemWithoutRoles[] = item.children
-            .filter((child) => child.roles.includes(role))
-            .map((child): MenuItemWithoutRoles => {
-              const { roles, ...rest } = child;
-              return {
-                id: rest.id,
-                label: rest.label,
-                path: rest.path,
-                icon: rest.icon,
+        if (menuIcon) {
+          menuItem.icon = menuIcon;
+        }
+
+        const childMenus = menuData.childMenus || (menu as any).childMenus || [];
+        if (childMenus && childMenus.length > 0) {
+          const accessibleChildren = childMenus
+            .map((child: any) => {
+              return child.toJSON ? child.toJSON() : child;
+            })
+            .filter((childData: any) => {
+              const childMenuRoles = childData.menuRoles || [];
+              return childMenuRoles.some((mr: any) => {
+                const mrData = mr.toJSON ? mr.toJSON() : mr;
+                return mrData.roleKey === roleKey;
+              });
+            })
+            .map((childData: any): MenuItemWithoutRoles => {
+              const childItem: MenuItemWithoutRoles = {
+                id: childData.id,
+                label: childData.label,
+                path: childData.path,
               };
+              if (childData.icon) {
+                childItem.icon = childData.icon;
+              }
+              return childItem;
             });
-          
+
           if (accessibleChildren.length > 0) {
-            (menuItem as MenuItemWithoutRoles).children = accessibleChildren;
+            menuItem.children = accessibleChildren;
           }
         }
 
         return menuItem;
       })
-      .filter((item) => {
-        if (item.children && item.children.length === 0) {
-          return item.path !== undefined;
-        }
-        return true;
-      });
+      .filter((item): item is MenuItemWithoutRoles => item !== null);
+  }
+
+  static async getAllMenus(includeInactive: boolean = false): Promise<Menu[]> {
+    return await MenuQueries.findAll(includeInactive);
+  }
+
+  static async getMenuById(id: string): Promise<Menu | null> {
+    return await MenuQueries.findById(id);
+  }
+
+  static async createMenu(data: {
+    id: string;
+    label: string;
+    path: string;
+    icon?: string;
+    parentId?: string;
+    displayOrder?: number;
+    isActive?: boolean;
+    roleKeys?: string[];
+  }): Promise<Menu> {
+    const menu = await MenuQueries.create({
+      id: data.id,
+      label: data.label,
+      path: data.path,
+      icon: data.icon,
+      parentId: data.parentId,
+      displayOrder: data.displayOrder ?? 0,
+      isActive: data.isActive ?? true,
+    });
+
+    if (data.roleKeys && data.roleKeys.length > 0) {
+      for (const roleKey of data.roleKeys) {
+        await MenuQueries.assignRole(menu.id, roleKey);
+      }
+    }
+
+    return menu;
+  }
+
+  static async updateMenu(
+    id: string,
+    data: {
+      label?: string;
+      path?: string;
+      icon?: string;
+      parentId?: string;
+      displayOrder?: number;
+      isActive?: boolean;
+    }
+  ): Promise<Menu | null> {
+    await MenuQueries.update(id, data);
+    return await MenuQueries.findById(id);
+  }
+
+  static async deleteMenu(id: string): Promise<void> {
+    await MenuQueries.removeAllRoles(id);
+    await MenuQueries.delete(id);
+  }
+
+  static async assignRoleToMenu(menuId: string, roleKey: string): Promise<MenuRole> {
+    return await MenuQueries.assignRole(menuId, roleKey);
+  }
+
+  static async removeRoleFromMenu(menuId: string, roleKey: string): Promise<void> {
+    await MenuQueries.removeRole(menuId, roleKey);
+  }
+
+  static async getMenuRoles(menuId: string): Promise<MenuRole[]> {
+    return await MenuQueries.getMenuRoles(menuId);
   }
 }
-

@@ -8,6 +8,7 @@ import { RequestLogModel } from './models/RequestLog.model';
 import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
 import roleRoutes from './routes/role.routes';
+import userModuleRoutes from './routes/userModule.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 9401;
@@ -71,6 +72,13 @@ const startServer = async () => {
   try {
     await connectDatabase();
     
+    // Setup menu model associations after database connection
+    // Import models first to ensure they're initialized
+    await import('./models/Menu.model');
+    await import('./models/MenuRole.model');
+    const { setupMenuAssociations } = await import('./models/menu-associations');
+    setupMenuAssociations();
+    
     setRequestLogger(async (log: any) => {
       // Don't await - make logging non-blocking
       RequestLogModel.create(log).catch((error) => {
@@ -107,6 +115,7 @@ const startServer = async () => {
     app.use('/api/auth', authRoutes);
     app.use('/api/devices', deviceRoutes);
     app.use('/api/roles', roleRoutes);
+    app.use('/api/user-modules', userModuleRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

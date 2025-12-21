@@ -115,7 +115,9 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
   "companyId": "company-uuid",
   "name": "Engineering",
   "description": "Software Development and Engineering",
-  "headId": "employee-uuid"
+  "headId": "employee-uuid",
+  "parentDepartmentId": "parent-department-uuid",
+  "hasSubDepartments": false
 }
 ```
 
@@ -126,6 +128,8 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 **Optional Fields:**
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
+- `parentDepartmentId` (string, optional) - UUID of the parent department if this is a sub-department
+- `hasSubDepartments` (boolean, optional) - Indicates if this department has sub-departments (automatically set when sub-departments are created)
 
 **Response (201):**
 ```json
@@ -183,7 +187,9 @@ curl -X POST http://localhost:9400/api/departments \
 {
   "name": "Engineering Updated",
   "description": "Updated department description",
-  "headId": "new-head-uuid"
+  "headId": "new-head-uuid",
+  "parentDepartmentId": "parent-department-uuid",
+  "hasSubDepartments": true
 }
 ```
 
@@ -191,6 +197,8 @@ curl -X POST http://localhost:9400/api/departments \
 - `name` (string, optional) - Department name (must be unique within the company if changed)
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
+- `parentDepartmentId` (string, optional) - UUID of the parent department if this is a sub-department (cannot be the department's own ID)
+- `hasSubDepartments` (boolean, optional) - Indicates if this department has sub-departments (automatically managed)
 
 **Response (200):**
 ```json
@@ -264,6 +272,105 @@ curl -X DELETE http://localhost:9400/api/departments/{department_id} \
 - `404` - Not Found (department not found)
 - `403` - Forbidden (insufficient permissions or cannot delete different company)
 
-**Note:** Deleting a department will permanently remove it from the database. Make sure no employees are assigned to this department before deletion.
+**Note:** Deleting a department will permanently remove it from the database. Make sure no employees are assigned to this department before deletion. If the department has sub-departments, they will be orphaned (parentDepartmentId set to null).
+
+---
+
+### 6. Get Sub-Departments
+
+**Method:** `GET`  
+**URL:** `/api/departments/:id/sub-departments`  
+**Full URL:** `http://localhost:9400/api/departments/{department_id}/sub-departments`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`  
+**Access Control:** Company-scoped users can only access departments from their own company
+
+**Path Parameters:**
+- `id` (string, required) - Department UUID
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Sub-departments retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "sub-department-uuid-1",
+      "companyId": "company-uuid",
+      "name": "Frontend Engineering",
+      "description": "Frontend Development Team",
+      "headId": "employee-uuid",
+      "parentDepartmentId": "department-uuid",
+      "hasSubDepartments": false,
+      "createdAt": "2025-01-14T10:30:00.000Z",
+      "updatedAt": "2025-01-14T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:9400/api/departments/{department_id}/sub-departments \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `404` - Not Found (parent department not found)
+- `403` - Forbidden (insufficient permissions or cannot access different company)
+
+---
+
+### 7. Get Top-Level Departments
+
+**Method:** `GET`  
+**URL:** `/api/departments/top-level/list`  
+**Full URL:** `http://localhost:9400/api/departments/top-level/list?companyId=company-uuid`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
+
+**Query Parameters:**
+- `companyId` (string, required) - Company UUID to filter top-level departments
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Top-level departments retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "department-uuid-1",
+      "companyId": "company-uuid",
+      "name": "Engineering",
+      "description": "Software Development and Engineering",
+      "headId": "employee-uuid",
+      "parentDepartmentId": null,
+      "hasSubDepartments": true,
+      "createdAt": "2025-01-14T10:30:00.000Z",
+      "updatedAt": "2025-01-14T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X GET "http://localhost:9400/api/departments/top-level/list?companyId=company-uuid" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Error Responses:**
+- `400` - Bad Request (companyId is required)
+- `403` - Forbidden (insufficient permissions or cannot access different company)
+
+**Notes:**
+- Returns only departments that have no parent department (top-level departments)
+- Useful for building department hierarchy trees
 
 ---

@@ -5,6 +5,8 @@ import {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  getSubDepartments,
+  getTopLevelDepartments,
 } from '../controllers/department.controller';
 import { getAuthMiddleware, UserRole } from '@hrm/common';
 import { enrichEmployeeContext } from '../middleware/accessControl';
@@ -78,6 +80,34 @@ router.delete(
     UserRole.COMPANY_ADMIN
   ),
   deleteDepartment
+);
+
+router.get(
+  '/:id/sub-departments',
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.HRBP,
+    UserRole.COMPANY_ADMIN,
+    UserRole.DEPARTMENT_HEAD,
+    UserRole.MANAGER
+  ),
+  getSubDepartments
+);
+
+router.get(
+  '/top-level/list',
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.HRBP,
+    UserRole.COMPANY_ADMIN,
+    UserRole.DEPARTMENT_HEAD,
+    UserRole.MANAGER
+  ),
+  getTopLevelDepartments
 );
 
 export default router;

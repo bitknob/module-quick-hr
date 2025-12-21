@@ -82,13 +82,17 @@ CREATE TABLE IF NOT EXISTS "Departments" (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     "headId" UUID,
+    "parentDepartmentId" UUID,
+    "hasSubDepartments" BOOLEAN DEFAULT false,
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_department_company FOREIGN KEY ("companyId") REFERENCES "Companies"(id) ON DELETE CASCADE,
+    CONSTRAINT fk_department_parent FOREIGN KEY ("parentDepartmentId") REFERENCES "Departments"(id) ON DELETE SET NULL,
     CONSTRAINT uk_department_company_name UNIQUE ("companyId", name)
 );
 
 CREATE INDEX IF NOT EXISTS idx_departments_company_id ON "Departments"("companyId");
+CREATE INDEX IF NOT EXISTS idx_departments_parent_id ON "Departments"("parentDepartmentId");
 
 -- Employees Table with self-referential hierarchy and company support
 CREATE TABLE IF NOT EXISTS "Employees" (
@@ -446,5 +450,62 @@ CREATE INDEX IF NOT EXISTS idx_roles_company_id ON "Roles"("companyId");
 CREATE INDEX IF NOT EXISTS idx_roles_is_system_role ON "Roles"("isSystemRole");
 CREATE INDEX IF NOT EXISTS idx_roles_is_active ON "Roles"("isActive");
 
+-- User Modules Table (Module assignments for users at levels 2, 3, 4)
+CREATE TABLE IF NOT EXISTS "UserModules" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" UUID NOT NULL,
+    "moduleKey" VARCHAR(100) NOT NULL,
+    "moduleName" VARCHAR(255) NOT NULL,
+    "isActive" BOOLEAN DEFAULT true,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_module_user FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE CASCADE,
+    CONSTRAINT uk_user_module UNIQUE ("userId", "moduleKey")
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_modules_user_id ON "UserModules"("userId");
+CREATE INDEX IF NOT EXISTS idx_user_modules_module_key ON "UserModules"("moduleKey");
+CREATE INDEX IF NOT EXISTS idx_user_modules_active ON "UserModules"("isActive");
+
+DROP TRIGGER IF EXISTS update_roles_updated_at ON "Roles";
 CREATE TRIGGER update_roles_updated_at BEFORE UPDATE ON "Roles"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_modules_updated_at ON "UserModules";
+CREATE TRIGGER update_user_modules_updated_at BEFORE UPDATE ON "UserModules"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Menus Table (Menu items with hierarchical support)
+CREATE TABLE IF NOT EXISTS "Menus" (
+    id VARCHAR(100) PRIMARY KEY,
+    label VARCHAR(255) NOT NULL,
+    path VARCHAR(500) NOT NULL,
+    icon VARCHAR(100),
+    "parentId" VARCHAR(100),
+    "displayOrder" INTEGER DEFAULT 0,
+    "isActive" BOOLEAN DEFAULT true,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_menu_parent FOREIGN KEY ("parentId") REFERENCES "Menus"(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_menus_parent_id ON "Menus"("parentId");
+CREATE INDEX IF NOT EXISTS idx_menus_display_order ON "Menus"("displayOrder");
+CREATE INDEX IF NOT EXISTS idx_menus_is_active ON "Menus"("isActive");
+
+-- MenuRoles Table (Junction table for menu-role access)
+CREATE TABLE IF NOT EXISTS "MenuRoles" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "menuId" VARCHAR(100) NOT NULL,
+    "roleKey" VARCHAR(50) NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_menu_role_menu FOREIGN KEY ("menuId") REFERENCES "Menus"(id) ON DELETE CASCADE,
+    CONSTRAINT uk_menu_role UNIQUE ("menuId", "roleKey")
+);
+
+CREATE INDEX IF NOT EXISTS idx_menu_roles_menu_id ON "MenuRoles"("menuId");
+CREATE INDEX IF NOT EXISTS idx_menu_roles_role_key ON "MenuRoles"("roleKey");
+
+DROP TRIGGER IF EXISTS update_menus_updated_at ON "Menus";
+CREATE TRIGGER update_menus_updated_at BEFORE UPDATE ON "Menus"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

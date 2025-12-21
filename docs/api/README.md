@@ -19,6 +19,10 @@ This API documentation is organized by module for easier navigation and maintena
 - [Health Check](./09-health.md) - Service health endpoints
 - [Common Information](./10-common.md) - Error responses, authentication flow, access control, notes
 - [Role Management](./11-roles.md) - Role management with hierarchy, permissions, and menu access
+- [User Module Management](./12-user-modules.md) - Module assignments for users at levels 2, 3, and 4
+- [Payroll Service](./13-payroll.md) - Payroll processing, salary structures, tax configuration, and payslip management
+- [Attendance Management](./14-attendance.md) - Attendance tracking, check-in/check-out, and workday statistics
+- [Leave Management](./15-leaves.md) - Leave request management with approval workflow
 
 ## Quick Start
 

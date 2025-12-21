@@ -13,9 +13,9 @@ The Role Management API provides comprehensive role management capabilities with
 ### Role Hierarchy Levels
 
 1. **Level 1** - Super Admin (Full system access)
-2. **Level 2** - Provider Admin (Manages provider HR team)
-3. **Level 3** - Provider HR Staff (Shared services)
-4. **Level 4** - HRBP (Dedicated HR Business Partner)
+2. **Level 2** - Provider Admin (Manages provider HR team) - Supports module-based assignments
+3. **Level 3** - Provider HR Staff (Shared services) - Supports module-based assignments
+4. **Level 4** - HRBP (Dedicated HR Business Partner) - Supports module-based assignments
 5. **Level 5** - Company Admin (Local admin)
 6. **Level 6** - Department Head (Top-level manager)
 7. **Level 7** - Manager (Direct reporting manager)
@@ -107,9 +107,9 @@ Level 8: ┌──────────────────────�
 | Level | Role Key | Role Name | Description | Access Scope | Key Capabilities |
 |-------|----------|-----------|-------------|--------------|------------------|
 | **1** | `super_admin` | **Super Admin** | Full system access, can manage all companies. Has unrestricted access to all data and can override approval workflows, view/edit any employee records, and configure system-wide settings across all companies. | All Companies | • Manage all companies<br>• Override approvals<br>• System-wide configuration<br>• Full data access |
-| **2** | `provider_admin` | **Provider Admin** | Manages provider HR team, access to all companies | All Companies | • Manage provider HR staff<br>• Access all companies<br>• Manage employees across companies |
-| **3** | `provider_hr_staff` | **Provider HR Staff** | Handles shared services, access to multiple/all companies | Multiple/All Companies | • Shared HR services<br>• Cross-company access<br>• Employee management |
-| **4** | `hrbp` | **HRBP** | Dedicated HR Business Partner, assigned to one company | Single Company | • Company-specific HR support<br>• Employee management<br>• Approval workflows |
+| **2** | `provider_admin` | **Provider Admin** | Manages provider HR team, access to all companies | All Companies | • Manage provider HR staff<br>• Access all companies<br>• Manage employees across companies<br>• **Module assignments**: Can be assigned specific modules (e.g., employees, payroll) |
+| **3** | `provider_hr_staff` | **Provider HR Staff** | Handles shared services, access to multiple/all companies | Multiple/All Companies | • Shared HR services<br>• Cross-company access<br>• Employee management<br>• **Module assignments**: Can be assigned specific modules (e.g., employees, payroll) |
+| **4** | `hrbp` | **HRBP** | Dedicated HR Business Partner, assigned to one company | Single Company | • Company-specific HR support<br>• Employee management<br>• Approval workflows<br>• **Module assignments**: Can be assigned specific modules (e.g., employees, payroll) |
 | **5** | `company_admin` | **Company Admin** | Local admin within one company | Single Company | • Company administration<br>• Employee management<br>• Department management |
 | **6** | `department_head` | **Department Head** | Top-level manager within company | Single Company (Department) | • Department oversight<br>• Team management<br>• Approval authority |
 | **7** | `manager` | **Manager** | Direct reporting manager | Single Company (Team) | • Direct team management<br>• Approval authority<br>• Team oversight |
