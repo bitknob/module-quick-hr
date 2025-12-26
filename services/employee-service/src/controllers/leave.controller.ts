@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, ResponseFormatter, ValidationError, UserRole } from '@hrm/common';
+import { AuthRequest, ResponseFormatter, ValidationError, UserRole, NotFoundError } from '@hrm/common';
 import { LeaveService } from '../services/leave.service';
+import { EmployeeQueries } from '../queries/employee.queries';
 import { z } from 'zod';
 import { LeaveType, LeaveStatus } from '@hrm/common';
 
@@ -173,8 +174,32 @@ export const getLeavesByEmployee = async (
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
     const status = req.query.status as LeaveStatus | undefined;
 
+    // Check if the employeeId parameter is actually a userId
+    // First try to find by employee ID, then by userId
+    let actualEmployeeId = employeeId;
+    let employee = await EmployeeQueries.findById(employeeId, companyId);
+    
+    if (!employee) {
+      // Try to find by userId
+      employee = await EmployeeQueries.findByUserId(employeeId);
+      if (employee) {
+        actualEmployeeId = employee.id;
+      } else {
+        // Employee not found - check if it's the current user requesting their own data
+        // Users without employee records don't have leaves, so return empty array
+        const currentUserId = req.user?.uid || req.user?.userId;
+        if (currentUserId && currentUserId === employeeId) {
+          ResponseFormatter.success(res, [], 'Leave requests retrieved successfully (no employee record)');
+          return;
+        }
+        // For other users, return 404
+        throw new NotFoundError('Employee');
+      }
+    }
+
+    // Only call service if we found an employee
     const leaves = await LeaveService.getLeavesByEmployee(
-      employeeId,
+      actualEmployeeId,
       companyId,
       startDate,
       endDate,
@@ -183,7 +208,18 @@ export const getLeavesByEmployee = async (
     const leavesData = leaves.map((l) => (l.toJSON ? l.toJSON() : l));
 
     ResponseFormatter.success(res, leavesData, 'Leave requests retrieved successfully');
-  } catch (error) {
+  } catch (error: any) {
+    // Handle NotFoundError - if user is requesting their own data, return empty array
+    if (error instanceof NotFoundError && error.message?.includes('Employee')) {
+      const { employeeId } = req.params;
+      const currentUserId = req.user?.uid || req.user?.userId;
+      if (currentUserId && currentUserId === employeeId) {
+        // User is requesting their own data but has no employee record
+        ResponseFormatter.success(res, [], 'Leave requests retrieved successfully (no employee record)');
+        return;
+      }
+    }
+    // For other errors, pass to error handler
     next(error);
   }
 };

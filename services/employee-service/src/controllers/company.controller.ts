@@ -131,26 +131,24 @@ export const uploadCompanyProfileImage = async (
     const company = await CompanyService.getCompanyById(companyId);
     if (company.profileImageUrl) {
       try {
-        const { deleteFromFirebaseStorage } = require('@hrm/common');
-        await deleteFromFirebaseStorage(company.profileImageUrl);
+        const { deleteFromS3 } = require('@hrm/common');
+        await deleteFromS3(company.profileImageUrl);
       } catch (error) {
         // Log error but continue with upload
         console.error('Failed to delete old profile image:', error);
       }
     }
 
-    // Upload new image to Firebase Storage
-    const folder = `companies/${companyId}`;
-    const { uploadToFirebaseStorage } = require('@hrm/common');
-    const imageUrl = await uploadToFirebaseStorage(
+    // Upload new image to S3
+    const { uploadImageToS3 } = require('@hrm/common');
+    const uploadResult = await uploadImageToS3(
       req.file.buffer,
       req.file.originalname,
-      folder,
       req.file.mimetype
     );
 
     // Update company with new profile image URL
-    const updatedCompany = await CompanyService.updateProfileImage(companyId, imageUrl);
+    const updatedCompany = await CompanyService.updateProfileImage(companyId, uploadResult.url);
 
     ResponseFormatter.success(
       res,

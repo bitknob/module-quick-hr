@@ -50,3 +50,56 @@ export const profileImageUploadMiddleware = (
   });
 };
 
+// File filter for documents (PDF, images, Word documents)
+const documentFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedMimeTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
+  
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new ValidationError(`Invalid file type. Allowed types: PDF, Images (JPEG, PNG, GIF, WebP), Word Documents`));
+  }
+};
+
+// Configure multer for documents
+const documentUpload = multer({
+  storage: storage,
+  fileFilter: documentFileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit for documents
+  },
+});
+
+/**
+ * Middleware for handling document uploads
+ * Expects a single file field named 'document'
+ */
+export const documentUploadMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const singleUpload = documentUpload.single('document');
+  
+  singleUpload(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(new ValidationError('File size exceeds maximum allowed size of 2MB'));
+        }
+        return next(new ValidationError(`File upload error: ${err.message}`));
+      }
+      return next(err);
+    }
+    next();
+  });
+};
+

@@ -32,7 +32,7 @@ All company endpoints require authentication.
       "name": "Acme Corporation",
       "code": "ACME001",
       "description": "A leading technology company",
-      "profileImageUrl": "https://firebase-storage-url/companies/company-uuid-1/image.jpg",
+      "profileImageUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/images/image.jpg",
       "hrbpId": "hrbp-uuid",
       "status": "active",
       "createdAt": "2025-01-14T10:30:00.000Z",
@@ -97,7 +97,7 @@ curl -X GET http://localhost:9400/api/companies \
     "name": "Acme Corporation",
     "code": "ACME001",
     "description": "A leading technology company",
-    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg",
+    "profileImageUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/images/image.jpg",
     "hrbpId": "hrbp-uuid",
     "status": "active",
     "createdAt": "2025-01-14T10:30:00.000Z",
@@ -227,7 +227,7 @@ curl -X POST http://localhost:9400/api/companies \
     "name": "Acme Corporation Updated",
     "code": "ACME001",
     "description": "Updated company description",
-    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg",
+    "profileImageUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/images/image.jpg",
     "hrbpId": "new-hrbp-uuid",
     "status": "active",
     "createdAt": "2025-01-14T10:30:00.000Z",
@@ -317,7 +317,7 @@ curl -X DELETE http://localhost:9400/api/companies/{company_id} \
   "response": {
     "id": "company-uuid",
     "name": "Acme Corporation",
-    "profileImageUrl": "https://firebase-storage-url/companies/company-uuid/image.jpg"
+    "profileImageUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/images/image.jpg"
   }
 }
 ```
@@ -329,6 +329,6 @@ curl -X POST http://localhost:9400/api/companies/{company_id}/upload-profile-ima
   -F "image=@/path/to/image.jpg"
 ```
 
-**Note:** If a profile image already exists, the old image will be automatically deleted from Firebase Storage before uploading the new one.
+**Note:** If a profile image already exists, the old image will be automatically deleted from AWS S3 before uploading the new one. Images are stored in the `images/` folder in the S3 bucket.
 
 ---

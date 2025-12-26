@@ -1,7 +1,10 @@
 import { Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service';
-import { AccessControl, UserRole, ResponseFormatter, NotFoundError } from '@hrm/common';
+import { AccessControl, UserRole, ResponseFormatter, NotFoundError, ValidationError, logger } from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
+import { DocumentService } from '../services/document.service';
+import { DocumentType, DocumentStatus } from '../models/EmployeeDocument.model';
+import { EmployeeDetailService } from '../services/employeeDetail.service';
 
 export const createEmployee = async (
   req: EnrichedAuthRequest,
@@ -38,6 +41,19 @@ export const getEmployee = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    
+    // Validate that id is a valid UUID format - prevent route conflicts with special paths
+    // Common non-UUID paths that shouldn't match this route
+    const reservedPaths = ['documents', 'attendance', 'leaves', 'details', 'approvals'];
+    if (reservedPaths.includes(id)) {
+      return next(new NotFoundError('Endpoint'));
+    }
+    
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || id === 'undefined' || !uuidRegex.test(id)) {
+      return next(new NotFoundError('Employee'));
+    }
+    
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
@@ -54,25 +70,40 @@ export const getCurrentEmployee = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  if (!req.user?.uid) {
+    return ResponseFormatter.error(res, 'User not authenticated', '', 401);
+  }
+
+  // Check if user can access all companies (super_admin, provider_admin, provider_hr_staff)
+  // This allows users without employee records to still access the system
+  const roleString = req.user?.role;
+  const canAccessAll = roleString
+    ? AccessControl.canAccessAllCompanies(roleString as UserRole)
+    : false;
+
+  // Try to get employee record
   try {
-    if (!req.user?.uid) {
-      return ResponseFormatter.error(res, 'User not authenticated', '', 401);
-    }
-
-    const userRole = req.user?.role as UserRole;
-    const canAccessAll = AccessControl.canAccessAllCompanies(userRole);
-
-    try {
-      const employee = await EmployeeService.getEmployeeByUserId(req.user.uid);
-      ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
-    } catch (error) {
-      if (error instanceof NotFoundError && canAccessAll) {
+    const employee = await EmployeeService.getEmployeeByUserId(req.user.uid);
+    ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
+    return;
+  } catch (error: any) {
+    // Handle employee not found case - always return 200, never 404
+    // Check for NotFoundError or any 404 error related to employee
+    const isEmployeeNotFound = (error instanceof NotFoundError || 
+                                error?.statusCode === 404) &&
+                               (error?.message?.includes('Employee') || 
+                                error?.message?.includes('not found'));
+    
+    if (isEmployeeNotFound) {
+      // Prevent error from propagating - always return 200 status
+      // Do NOT call next(error) - handle it here to avoid 404 status
+      if (canAccessAll) {
         // Super Admin or Provider Admin without employee record
-        // Return user information instead
+        // Return user information instead of 404
         ResponseFormatter.success(
           res,
           {
-            id: null,
+            id: req.user.uid,
             userId: req.user.uid,
             email: req.user.email,
             role: req.user.role,
@@ -81,11 +112,28 @@ export const getCurrentEmployee = async (
           },
           'User information retrieved successfully (no employee record)'
         );
+        return; // Important: return here to prevent error from propagating
       } else {
-        next(error);
+        // Regular users without employee record
+        // Return 200 status with error information in response body
+        ResponseFormatter.success(
+          res,
+          {
+            id: req.user.uid,
+            userId: req.user.uid,
+            email: req.user.email,
+            role: req.user.role,
+            hasEmployeeRecord: false,
+            error: 'Employee profile not found',
+          },
+          'Employee profile not found',
+          'Your employee profile has not been set up yet. Please contact your administrator.'
+        );
+        return; // Important: return here to prevent error from propagating
       }
     }
-  } catch (error) {
+    
+    // For other errors, pass to error handler
     next(error);
   }
 };
@@ -237,6 +285,63 @@ export const transferEmployee = async (
     const employee = await EmployeeService.transferEmployee(id, newManagerId || null);
     ResponseFormatter.success(res, employee, 'Employee transferred successfully');
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getCurrentEmployeeDocuments = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.employee?.id) {
+      ResponseFormatter.success(res, [], 'Documents retrieved successfully (no employee record)');
+      return;
+    }
+
+    const companyId = req.query.companyId as string | undefined;
+    const documentType = req.query.documentType as DocumentType | undefined;
+    const status = req.query.status as DocumentStatus | undefined;
+
+    const documents = await DocumentService.getDocumentsByEmployee(
+      req.employee.id,
+      companyId,
+      documentType,
+      status
+    );
+    const documentsData = documents.map((d) => (d.toJSON ? d.toJSON() : d));
+
+    ResponseFormatter.success(res, documentsData, 'Documents retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCurrentEmployeeDetails = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.employee?.id) {
+      ResponseFormatter.error(res, 'Employee record not found', '', 404);
+      return;
+    }
+
+    const companyId = req.query.companyId as string | undefined;
+    const detail = await EmployeeDetailService.getDetailByEmployeeId(
+      req.employee.id,
+      companyId || req.employee.companyId
+    );
+    const detailData = detail.toJSON ? detail.toJSON() : detail;
+
+    ResponseFormatter.success(res, detailData, 'Employee detail retrieved successfully');
+  } catch (error: any) {
+    if (error instanceof NotFoundError && error.message?.includes('Employee detail')) {
+      ResponseFormatter.error(res, 'Employee detail not found', '', 404);
+      return;
+    }
     next(error);
   }
 };

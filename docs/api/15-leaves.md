@@ -400,13 +400,18 @@ curl -X POST http://localhost:9400/api/leaves/{leave_id}/reject?companyId=compan
 **Authentication:** Required
 
 **Path Parameters:**
-- `employeeId` (string, required) - Employee UUID
+- `employeeId` (string, required) - Employee UUID or User UUID (both are supported)
 
 **Query Parameters:**
 - `companyId` (string, optional) - Company ID for access control
 - `startDate` (string, optional) - Start date filter (YYYY-MM-DD)
 - `endDate` (string, optional) - End date filter (YYYY-MM-DD)
 - `status` (string, optional) - Filter by status: `pending`, `approved`, `rejected`, `cancelled`
+
+**Notes:**
+- The `employeeId` parameter accepts both employee UUID and user UUID
+- If a user UUID is provided, the system will automatically resolve it to the corresponding employee UUID
+- If the current user requests their own leaves using their user UUID and no employee record exists, an empty array is returned
 
 **Response (200):**
 ```json
@@ -435,6 +440,18 @@ curl -X POST http://localhost:9400/api/leaves/{leave_id}/reject?companyId=compan
 ```bash
 curl -X GET "http://localhost:9400/api/leaves/employee/{employee_id}?startDate=2024-01-01&endDate=2024-12-31&status=approved" \
   -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200) - No Employee Record:**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Leave requests retrieved successfully (no employee record)",
+    "responseDetail": ""
+  },
+  "response": []
+}
 ```
 
 ---

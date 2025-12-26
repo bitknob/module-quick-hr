@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '@hrm/common';
+import { getAuthMiddleware } from '@hrm/common';
 import {
   createLeaveRequest,
   getLeaveRequest,
@@ -14,19 +14,23 @@ import {
   searchLeaves,
 } from '../controllers/leave.controller';
 
+const { authenticate } = getAuthMiddleware();
+
 const router = Router();
 
-router.post('/', authenticate, createLeaveRequest);
-router.get('/search', authenticate, searchLeaves);
-router.get('/pending', authenticate, getPendingLeavesForApprover);
-router.get('/employee/:employeeId', authenticate, getLeavesByEmployee);
-router.get('/company/:companyId', authenticate, getLeavesByCompany);
-router.post('/:id/approve', authenticate, approveLeaveRequest);
-router.post('/:id/reject', authenticate, rejectLeaveRequest);
-router.post('/:id/cancel', authenticate, cancelLeaveRequest);
-router.get('/:id', authenticate, getLeaveRequest);
-router.put('/:id', authenticate, updateLeaveRequest);
-router.delete('/:id', authenticate, deleteLeaveRequest);
+router.use(authenticate);
+
+router.post('/', createLeaveRequest);
+router.get('/search', searchLeaves);
+router.get('/pending', getPendingLeavesForApprover);
+router.get('/employee/:employeeId', getLeavesByEmployee);
+router.get('/company/:companyId', getLeavesByCompany);
+router.post('/:id/approve', approveLeaveRequest);
+router.post('/:id/reject', rejectLeaveRequest);
+router.post('/:id/cancel', cancelLeaveRequest);
+router.get('/:id', getLeaveRequest);
+router.put('/:id', updateLeaveRequest);
+router.delete('/:id', deleteLeaveRequest);
 
 export default router;
 

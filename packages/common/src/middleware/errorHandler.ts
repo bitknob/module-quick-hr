@@ -32,20 +32,33 @@ export const errorHandler = (
   }
 
   if (err instanceof AppError) {
-    logger.error({
-      message: err.message,
-      statusCode: err.statusCode,
-      stack: err.stack,
-      path: req.path,
-      method: req.method,
-    });
+    // Only log error if response hasn't been sent yet
+    // This prevents logging errors that were handled gracefully
+    if (!res.headersSent) {
+      logger.error({
+        message: err.message,
+        statusCode: err.statusCode,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+      });
 
-    return ResponseFormatter.error(
-      res,
-      err.message,
-      err.message,
-      err.statusCode
-    );
+      return ResponseFormatter.error(
+        res,
+        err.message,
+        err.message,
+        err.statusCode
+      );
+    } else {
+      // Response already sent, just log as warning
+      logger.warn({
+        message: `Error after response sent: ${err.message}`,
+        statusCode: err.statusCode,
+        path: req.path,
+        method: req.method,
+      });
+    }
+    return;
   }
 
   logger.error({

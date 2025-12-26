@@ -38,7 +38,7 @@ app.use(
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
       // Handle specific error codes
-      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -67,15 +67,33 @@ app.use(
     pathRewrite: {
       '^/api/employees': '/api/employees',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -88,15 +106,33 @@ app.use(
     pathRewrite: {
       '^/api/approvals': '/api/approvals',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -109,15 +145,33 @@ app.use(
     pathRewrite: {
       '^/api/companies': '/api/companies',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -130,15 +184,33 @@ app.use(
     pathRewrite: {
       '^/api/departments': '/api/departments',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -151,15 +223,150 @@ app.use(
     pathRewrite: {
       '^/api/search': '/api/search',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
+app.use(
+  '/api/documents',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/documents': '/api/documents',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
+app.use(
+  '/api/attendance',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/attendance': '/api/attendance',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
+app.use(
+  '/api/leaves',
+  createProxyMiddleware({
+    target: EMPLOYEE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/leaves': '/api/leaves',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${EMPLOYEE_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -172,15 +379,33 @@ app.use(
     pathRewrite: {
       '^/api/devices': '/api/devices',
     },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying ${req.method} ${req.url} to ${AUTH_SERVICE_URL}`);
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Service temporarily unavailable',
-      });
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     },
   })
 );
@@ -206,7 +431,7 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -245,7 +470,7 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',

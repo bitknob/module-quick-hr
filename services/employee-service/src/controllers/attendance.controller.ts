@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, ResponseFormatter, ValidationError, UserRole } from '@hrm/common';
+import { AuthRequest, ResponseFormatter, ValidationError, UserRole, NotFoundError } from '@hrm/common';
 import { AttendanceService } from '../services/attendance.service';
+import { EmployeeQueries } from '../queries/employee.queries';
 import { z } from 'zod';
 import { AttendanceStatus } from '@hrm/common';
 
@@ -52,7 +53,18 @@ export const getAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const companyId = req.query.companyId as string | undefined;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!id || id === 'undefined') {
+      return next(new ValidationError('Attendance ID is required'));
+    }
+    
+    // Handle optional companyId - convert 'undefined' string to undefined
+    let companyId = req.query.companyId as string | undefined;
+    if (companyId === 'undefined') {
+      companyId = undefined;
+    }
+    
     const attendance = await AttendanceService.getAttendanceById(id, companyId);
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
@@ -69,7 +81,17 @@ export const updateAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const companyId = req.query.companyId as string | undefined;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!id || id === 'undefined') {
+      return next(new ValidationError('Attendance ID is required'));
+    }
+    
+    // Handle optional companyId - convert 'undefined' string to undefined
+    let companyId = req.query.companyId as string | undefined;
+    if (companyId === 'undefined') {
+      companyId = undefined;
+    }
     const userRole = req.user?.role as UserRole;
     if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.MANAGER].includes(userRole)) {
       return next(new ValidationError('Insufficient permissions to update attendance'));
@@ -95,7 +117,17 @@ export const deleteAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const companyId = req.query.companyId as string | undefined;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!id || id === 'undefined') {
+      return next(new ValidationError('Attendance ID is required'));
+    }
+    
+    // Handle optional companyId - convert 'undefined' string to undefined
+    let companyId = req.query.companyId as string | undefined;
+    if (companyId === 'undefined') {
+      companyId = undefined;
+    }
     const userRole = req.user?.role as UserRole;
     if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN].includes(userRole)) {
       return next(new ValidationError('Insufficient permissions to delete attendance'));
@@ -115,12 +147,47 @@ export const getAttendanceByEmployee = async (
 ): Promise<void> => {
   try {
     const { employeeId } = req.params;
-    const companyId = req.query.companyId as string | undefined;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!employeeId || employeeId === 'undefined') {
+      return next(new ValidationError('Employee ID is required'));
+    }
+    
+    // Handle optional companyId - convert 'undefined' string to undefined
+    let companyId = req.query.companyId as string | undefined;
+    if (companyId === 'undefined') {
+      companyId = undefined;
+    }
+    
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
+    // Check if the employeeId parameter is actually a userId
+    // First try to find by employee ID, then by userId
+    let actualEmployeeId = employeeId;
+    let employee = await EmployeeQueries.findById(employeeId, companyId);
+    
+    if (!employee) {
+      // Try to find by userId
+      employee = await EmployeeQueries.findByUserId(employeeId);
+      if (employee) {
+        actualEmployeeId = employee.id;
+      } else {
+        // Employee not found - check if it's the current user requesting their own data
+        // Users without employee records don't have attendance, so return empty array
+        const currentUserId = req.user?.uid || req.user?.userId;
+        if (currentUserId && currentUserId === employeeId) {
+          ResponseFormatter.success(res, [], 'Attendances retrieved successfully (no employee record)');
+          return;
+        }
+        // For other users, return 404
+        throw new NotFoundError('Employee');
+      }
+    }
+
+    // Only call service if we found an employee
     const attendances = await AttendanceService.getAttendanceByEmployee(
-      employeeId,
+      actualEmployeeId,
       companyId,
       startDate,
       endDate
@@ -128,7 +195,18 @@ export const getAttendanceByEmployee = async (
     const attendancesData = attendances.map((a) => (a.toJSON ? a.toJSON() : a));
 
     ResponseFormatter.success(res, attendancesData, 'Attendances retrieved successfully');
-  } catch (error) {
+  } catch (error: any) {
+    // Handle NotFoundError - if user is requesting their own data, return empty array
+    if (error instanceof NotFoundError && error.message?.includes('Employee')) {
+      const { employeeId } = req.params;
+      const currentUserId = req.user?.uid || req.user?.userId;
+      if (currentUserId && currentUserId === employeeId) {
+        // User is requesting their own data but has no employee record
+        ResponseFormatter.success(res, [], 'Attendances retrieved successfully (no employee record)');
+        return;
+      }
+    }
+    // For other errors, pass to error handler
     next(error);
   }
 };
@@ -140,6 +218,12 @@ export const getAttendanceByCompany = async (
 ): Promise<void> => {
   try {
     const { companyId } = req.params;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!companyId || companyId === 'undefined') {
+      return next(new ValidationError('Company ID is required'));
+    }
+    
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
     const status = req.query.status as AttendanceStatus | undefined;
@@ -168,11 +252,21 @@ export const getAttendanceStats = async (
     const month = parseInt(req.query.month as string);
     const year = parseInt(req.query.year as string);
 
-    if (!month || !year) {
+    // Validate required parameters - handle 'undefined' string
+    if (!employeeId || employeeId === 'undefined') {
+      return next(new ValidationError('Employee ID is required'));
+    }
+    if (!companyId || companyId === 'undefined') {
+      return next(new ValidationError('Company ID is required'));
+    }
+
+    // Validate month and year
+    if (!month || !year || isNaN(month) || isNaN(year)) {
       return next(new ValidationError('Month and year are required'));
     }
 
-    const stats = await AttendanceService.getAttendanceStats(employeeId, companyId, month, year);
+    // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
+    const stats = await AttendanceService.getAttendanceStats(employeeId as string, companyId as string, month, year);
     ResponseFormatter.success(res, stats, 'Attendance stats retrieved successfully');
   } catch (error) {
     next(error);
@@ -186,9 +280,19 @@ export const checkIn = async (
 ): Promise<void> => {
   try {
     const { employeeId, companyId } = req.params;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!employeeId || employeeId === 'undefined') {
+      return next(new ValidationError('Employee ID is required'));
+    }
+    if (!companyId || companyId === 'undefined') {
+      return next(new ValidationError('Company ID is required'));
+    }
+
     const checkInTime = req.body.checkInTime ? new Date(req.body.checkInTime) : undefined;
 
-    const attendance = await AttendanceService.checkIn(employeeId, companyId, checkInTime);
+    // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
+    const attendance = await AttendanceService.checkIn(employeeId as string, companyId as string, checkInTime);
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
     ResponseFormatter.success(res, attendanceData, 'Checked in successfully', '', 201);
@@ -204,9 +308,19 @@ export const checkOut = async (
 ): Promise<void> => {
   try {
     const { employeeId, companyId } = req.params;
+    
+    // Validate required parameters - handle 'undefined' string
+    if (!employeeId || employeeId === 'undefined') {
+      return next(new ValidationError('Employee ID is required'));
+    }
+    if (!companyId || companyId === 'undefined') {
+      return next(new ValidationError('Company ID is required'));
+    }
+
     const checkOutTime = req.body.checkOutTime ? new Date(req.body.checkOutTime) : undefined;
 
-    const attendance = await AttendanceService.checkOut(employeeId, companyId, checkOutTime);
+    // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
+    const attendance = await AttendanceService.checkOut(employeeId as string, companyId as string, checkOutTime);
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
     ResponseFormatter.success(res, attendanceData, 'Checked out successfully');

@@ -10,6 +10,8 @@ import {
   getHierarchyTree,
   searchEmployees,
   transferEmployee,
+  getCurrentEmployeeDocuments,
+  getCurrentEmployeeDetails,
 } from '../controllers/employee.controller';
 import { getAuthMiddleware, UserRole } from '@hrm/common';
 import { enrichEmployeeContext, checkCompanyAccess, checkEmployeeAccess } from '../middleware/accessControl';
@@ -22,6 +24,8 @@ router.use(authenticate);
 router.use(enrichEmployeeContext);
 
 router.get('/me', getCurrentEmployee);
+router.get('/documents', getCurrentEmployeeDocuments);
+router.get('/details', getCurrentEmployeeDetails);
 router.get('/hierarchy', getHierarchyTree);
 router.get('/search', searchEmployees);
 router.get('/manager/:managerId/direct-reports', getDirectReports);

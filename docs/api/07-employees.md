@@ -91,7 +91,160 @@ curl -X GET http://localhost:9400/api/employees/me \
 
 ---
 
-### 2. Create Employee
+### 2. Get Current Employee Documents
+
+**Method:** `GET`  
+**URL:** `/api/employees/documents`  
+**Full URL:** `http://localhost:9400/api/employees/documents?documentType=pan_card&status=verified`  
+**Authentication:** Required
+
+**Query Parameters:**
+- `companyId` (string, optional) - Company ID for access control
+- `documentType` (string, optional) - Filter by document type (see [Employee Documents API](./16-employee-documents.md) for available types)
+- `status` (string, optional) - Filter by status: `pending`, `verified`, `rejected`, `expired`
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Documents retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "uuid",
+      "documentType": "pan_card",
+      "documentName": "PAN Card",
+      "fileUrl": "https://storage.googleapis.com/...",
+      "status": "verified",
+      "verifiedAt": "2024-01-16T14:00:00.000Z",
+      "verifier": {
+        "id": "verifier_uuid",
+        "firstName": "Manager",
+        "lastName": "Name",
+        "employeeId": "MGR001"
+      }
+    }
+  ]
+}
+```
+
+**Response (200) - No Employee Record:**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Documents retrieved successfully (no employee record)",
+    "responseDetail": ""
+  },
+  "response": []
+}
+```
+
+**cURL:**
+```bash
+curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card&status=verified" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Notes:**
+- Returns documents for the authenticated user's employee record
+- If the user doesn't have an employee record, returns an empty array
+- For more information about document types and operations, see [Employee Documents API](./16-employee-documents.md)
+
+---
+
+### 3. Get Current Employee Details
+
+**Method:** `GET`  
+**URL:** `/api/employees/details`  
+**Full URL:** `http://localhost:9400/api/employees/details?companyId=company_uuid`  
+**Authentication:** Required
+
+**Query Parameters:**
+- `companyId` (string, optional) - Company ID for access control
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Employee detail retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "id": "uuid",
+    "employeeId": "employee_uuid",
+    "companyId": "company_uuid",
+    "emergencyContactName": "Jane Doe",
+    "emergencyContactPhone": "+1234567890",
+    "emergencyContactRelation": "Spouse",
+    "bankAccountNumber": "1234567890",
+    "bankName": "ABC Bank",
+    "bankBranch": "Main Branch",
+    "bankIFSC": "ABCD0123456",
+    "panNumber": "ABCDE1234F",
+    "aadhaarNumber": "1234 5678 9012",
+    "passportNumber": "A12345678",
+    "drivingLicenseNumber": "DL1234567890",
+    "bloodGroup": "O+",
+    "maritalStatus": "married",
+    "spouseName": "Jane Doe",
+    "fatherName": "John Senior",
+    "motherName": "Mary Doe",
+    "permanentAddress": "123 Main St, City, State, ZIP",
+    "currentAddress": "456 Current St, City, State, ZIP",
+    "previousEmployer": "Previous Company",
+    "previousDesignation": "Senior Developer",
+    "previousSalary": 80000.00,
+    "noticePeriod": 30,
+    "skills": ["JavaScript", "TypeScript", "Node.js", "React"],
+    "languages": ["English", "Hindi", "Spanish"],
+    "additionalInfo": {
+      "customField1": "value1",
+      "customField2": "value2"
+    },
+    "employee": {
+      "id": "employee_uuid",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "employeeId": "EMP001"
+    },
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**Response (404) - No Employee Record:**
+```json
+{
+  "header": {
+    "responseCode": 404,
+    "responseMessage": "Employee record not found",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+```bash
+curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Notes:**
+- Returns employee details for the authenticated user's employee record
+- If the user doesn't have an employee record, returns 404
+- If the employee record exists but details haven't been created, returns 404
+- For more information about employee details fields and operations, see [Employee Details API](./17-employee-details.md)
+
+---
+
+### 4. Create Employee
 
 **Method:** `POST`  
 **URL:** `/api/employees`  
@@ -164,7 +317,7 @@ curl -X POST http://localhost:9400/api/employees \
 
 ---
 
-### 3. Get Employee by ID
+### 5. Get Employee by ID
 
 **Method:** `GET`  
 **URL:** `/api/employees/:id`  
@@ -213,7 +366,7 @@ curl -X GET http://localhost:9400/api/employees/{employee_id} \
 
 ---
 
-### 4. Update Employee
+### 6. Update Employee
 
 **Method:** `PUT`  
 **URL:** `/api/employees/:id`  
@@ -267,7 +420,7 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id} \
 
 ---
 
-### 5. Delete Employee
+### 7. Delete Employee
 
 **Method:** `DELETE`  
 **URL:** `/api/employees/:id`  
@@ -299,7 +452,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 
 ---
 
-### 6. Search Employees
+### 8. Search Employees
 
 **Method:** `GET`  
 **URL:** `/api/employees/search`  
@@ -346,7 +499,7 @@ curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTe
 
 ---
 
-### 7. Get Hierarchy Tree
+### 9. Get Hierarchy Tree
 
 **Method:** `GET`  
 **URL:** `/api/employees/hierarchy`  
@@ -384,7 +537,7 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
 
 ---
 
-### 8. Get Direct Reports
+### 10. Get Direct Reports
 
 **Method:** `GET`  
 **URL:** `/api/employees/manager/:managerId/direct-reports`  
@@ -423,7 +576,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
 
 ---
 
-### 9. Get All Subordinates
+### 11. Get All Subordinates
 
 **Method:** `GET`  
 **URL:** `/api/employees/manager/:managerId/subordinates`  
@@ -464,7 +617,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 
 ---
 
-### 10. Transfer Employee
+### 12. Transfer Employee
 
 **Method:** `PUT`  
 **URL:** `/api/employees/:id/transfer`  
@@ -510,3 +663,8 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
 ```
 
 ---
+
+## Related APIs
+
+- [Employee Documents](./16-employee-documents.md) - Document upload and verification
+- [Employee Details](./17-employee-details.md) - Additional employee information management

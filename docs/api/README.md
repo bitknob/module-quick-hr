@@ -23,6 +23,9 @@ This API documentation is organized by module for easier navigation and maintena
 - [Payroll Service](./13-payroll.md) - Payroll processing, salary structures, tax configuration, and payslip management
 - [Attendance Management](./14-attendance.md) - Attendance tracking, check-in/check-out, and workday statistics
 - [Leave Management](./15-leaves.md) - Leave request management with approval workflow
+- [Employee Documents](./16-employee-documents.md) - Document upload, storage, and verification
+- [Employee Details](./17-employee-details.md) - Additional employee information management
+- [S3 Usage & Free Tier](./18-s3-usage.md) - AWS S3 usage monitoring and free tier optimization
 
 ## Quick Start
 

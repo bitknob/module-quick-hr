@@ -13,6 +13,8 @@ import departmentRoutes from './routes/department.routes';
 import searchRoutes from './routes/search.routes';
 import attendanceRoutes from './routes/attendance.routes';
 import leaveRoutes from './routes/leave.routes';
+import documentRoutes from './routes/document.routes';
+import employeeDetailRoutes from './routes/employeeDetail.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.EMPLOYEE_SERVICE_PORT || 9402;
@@ -51,6 +53,8 @@ const startServer = async () => {
     app.use('/api/search', searchRoutes);
     app.use('/api/attendance', attendanceRoutes);
     app.use('/api/leaves', leaveRoutes);
+    app.use('/api/documents', documentRoutes);
+    app.use('/api/employee-details', employeeDetailRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

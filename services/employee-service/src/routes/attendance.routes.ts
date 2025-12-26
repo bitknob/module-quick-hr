@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '@hrm/common';
+import { getAuthMiddleware } from '@hrm/common';
 import {
   createAttendance,
   getAttendance,
@@ -13,18 +13,22 @@ import {
   searchAttendances,
 } from '../controllers/attendance.controller';
 
+const { authenticate } = getAuthMiddleware();
+
 const router = Router();
 
-router.post('/', authenticate, createAttendance);
-router.get('/search', authenticate, searchAttendances);
-router.get('/stats/:employeeId/:companyId', authenticate, getAttendanceStats);
-router.get('/employee/:employeeId', authenticate, getAttendanceByEmployee);
-router.get('/company/:companyId', authenticate, getAttendanceByCompany);
-router.post('/checkin/:employeeId/:companyId', authenticate, checkIn);
-router.post('/checkout/:employeeId/:companyId', authenticate, checkOut);
-router.get('/:id', authenticate, getAttendance);
-router.put('/:id', authenticate, updateAttendance);
-router.delete('/:id', authenticate, deleteAttendance);
+router.use(authenticate);
+
+router.post('/', createAttendance);
+router.get('/search', searchAttendances);
+router.get('/stats/:employeeId/:companyId', getAttendanceStats);
+router.get('/employee/:employeeId', getAttendanceByEmployee);
+router.get('/company/:companyId', getAttendanceByCompany);
+router.post('/checkin/:employeeId/:companyId', checkIn);
+router.post('/checkout/:employeeId/:companyId', checkOut);
+router.get('/:id', getAttendance);
+router.put('/:id', updateAttendance);
+router.delete('/:id', deleteAttendance);
 
 export default router;
 

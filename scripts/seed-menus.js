@@ -61,6 +61,22 @@ const menus = [
         displayOrder: 2,
         roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin'],
       },
+      {
+        id: 'employees-documents',
+        label: 'Employee Documents',
+        path: '/dashboard/employees/documents',
+        parentId: 'employees',
+        displayOrder: 3,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
+      },
+      {
+        id: 'employees-details',
+        label: 'Employee Details',
+        path: '/dashboard/employees/details',
+        parentId: 'employees',
+        displayOrder: 4,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
+      },
     ],
   },
   {
@@ -186,12 +202,55 @@ const menus = [
     ],
   },
   {
+    id: 'documents',
+    label: 'Documents',
+    path: '/dashboard/documents',
+    icon: 'file-text',
+    parentId: null,
+    displayOrder: 8,
+    roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
+    children: [
+      {
+        id: 'documents-my',
+        label: 'My Documents',
+        path: '/dashboard/documents/my',
+        parentId: 'documents',
+        displayOrder: 1,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
+      },
+      {
+        id: 'documents-upload',
+        label: 'Upload Document',
+        path: '/dashboard/documents/upload',
+        parentId: 'documents',
+        displayOrder: 2,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
+      },
+      {
+        id: 'documents-pending',
+        label: 'Pending Verification',
+        path: '/dashboard/documents/pending',
+        parentId: 'documents',
+        displayOrder: 3,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager'],
+      },
+      {
+        id: 'documents-all',
+        label: 'All Documents',
+        path: '/dashboard/documents',
+        parentId: 'documents',
+        displayOrder: 4,
+        roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager'],
+      },
+    ],
+  },
+  {
     id: 'payroll',
     label: 'Payroll',
     path: '/dashboard/payroll',
     icon: 'dollar-sign',
     parentId: null,
-    displayOrder: 8,
+    displayOrder: 9,
     roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'employee'],
     children: [
       {
@@ -290,7 +349,7 @@ const menus = [
     path: '/dashboard/profile',
     icon: 'user',
     parentId: null,
-    displayOrder: 9,
+    displayOrder: 10,
     roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin', 'department_head', 'manager', 'employee'],
   },
   {
@@ -299,7 +358,7 @@ const menus = [
     path: '/dashboard/settings',
     icon: 'settings',
     parentId: null,
-    displayOrder: 10,
+    displayOrder: 11,
     roles: ['super_admin', 'provider_admin', 'provider_hr_staff', 'hrbp', 'company_admin'],
     children: [
       {
@@ -334,7 +393,7 @@ const menus = [
     path: '/dashboard/roles',
     icon: 'shield',
     parentId: null,
-    displayOrder: 11,
+    displayOrder: 12,
     roles: ['super_admin', 'provider_admin', 'provider_hr_staff'],
     children: [
       {
