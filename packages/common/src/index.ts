@@ -4,6 +4,7 @@ export * from './utils/errors';
 export * from './utils/accessControl';
 export * from './utils/response';
 export * from './utils/firebase';
+export * from './utils/notifications';
 export * from './utils/s3';
 export * from './utils/s3UsageMonitor';
 export * from './utils/compression';

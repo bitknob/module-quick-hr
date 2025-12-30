@@ -20,7 +20,16 @@ export class EmployeeService {
     hireDate: Date;
     salary?: number;
   }): Promise<Employee> {
-    const existingEmployee = await EmployeeQueries.findByEmployeeId(data.employeeId, data.companyId);
+    // Check for duplicate userId first
+    const existingUserId = await Employee.findOne({ where: { userId: data.userId } });
+    if (existingUserId) {
+      throw new ConflictError('An employee record already exists for this user');
+    }
+
+    const existingEmployee = await EmployeeQueries.findByEmployeeId(
+      data.employeeId,
+      data.companyId
+    );
     if (existingEmployee) {
       throw new ConflictError('Employee ID already exists in this company');
     }
@@ -37,7 +46,10 @@ export class EmployeeService {
     };
 
     if (normalizedData.managerId) {
-      const manager = await EmployeeQueries.findById(normalizedData.managerId, normalizedData.companyId);
+      const manager = await EmployeeQueries.findById(
+        normalizedData.managerId,
+        normalizedData.companyId
+      );
       if (!manager) {
         throw new NotFoundError('Manager');
       }
@@ -100,14 +112,17 @@ export class EmployeeService {
     }
 
     // Normalize empty strings to null/undefined for optional fields
-    const managerIdValue = data.managerId !== undefined 
-      ? (data.managerId && data.managerId.toString().trim() !== '' ? data.managerId : null)
-      : undefined;
+    const managerIdValue =
+      data.managerId !== undefined
+        ? data.managerId && data.managerId.toString().trim() !== ''
+          ? data.managerId
+          : null
+        : undefined;
 
     // Build update object, excluding managerId from spread to handle it separately
     const { managerId, ...restData } = data;
     const updateData: Record<string, any> = { ...restData };
-    
+
     // Handle managerId separately to support null values (Sequelize accepts null at runtime)
     if (managerIdValue !== undefined) {
       updateData.managerId = managerIdValue;
@@ -137,7 +152,7 @@ export class EmployeeService {
     }
 
     await Employee.update(updateData as any, { where: { id } });
-    return await EmployeeQueries.findById(id, companyId) as Employee;
+    return (await EmployeeQueries.findById(id, companyId)) as Employee;
   }
 
   static async deleteEmployee(id: string): Promise<void> {
@@ -182,7 +197,10 @@ export class EmployeeService {
     return await EmployeeQueries.searchEmployees(filters, page, limit);
   }
 
-  static async getEmployeesByDepartment(department: string, companyId?: string): Promise<Employee[]> {
+  static async getEmployeesByDepartment(
+    department: string,
+    companyId?: string
+  ): Promise<Employee[]> {
     return await EmployeeQueries.getEmployeesByDepartment(department, companyId);
   }
 
@@ -212,7 +230,6 @@ export class EmployeeService {
     }
 
     await EmployeeQueries.updateManager(employeeId, newManagerId);
-    return await EmployeeQueries.findById(employeeId) as Employee;
+    return (await EmployeeQueries.findById(employeeId)) as Employee;
   }
 }
-

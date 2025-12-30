@@ -15,6 +15,7 @@ import attendanceRoutes from './routes/attendance.routes';
 import leaveRoutes from './routes/leave.routes';
 import documentRoutes from './routes/document.routes';
 import employeeDetailRoutes from './routes/employeeDetail.routes';
+import notificationRoutes from './routes/notification.routes';
 
 const app = express();
 const PORT = process.env.PORT || process.env.EMPLOYEE_SERVICE_PORT || 9402;
@@ -55,6 +56,7 @@ const startServer = async () => {
     app.use('/api/leaves', leaveRoutes);
     app.use('/api/documents', documentRoutes);
     app.use('/api/employee-details', employeeDetailRoutes);
+    app.use('/api/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => {
   ResponseFormatter.success(

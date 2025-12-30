@@ -8,6 +8,7 @@ export { Attendance } from './Attendance.model';
 export { LeaveRequest } from './LeaveRequest.model';
 export { EmployeeDocument } from './EmployeeDocument.model';
 export { EmployeeDetail } from './EmployeeDetail.model';
+export { Notification } from './Notification.model';
 
 // Import models for associations (after exports to avoid circular deps)
 import { Employee } from './Employee.model';
@@ -18,6 +19,7 @@ import { Attendance } from './Attendance.model';
 import { LeaveRequest } from './LeaveRequest.model';
 import { EmployeeDocument } from './EmployeeDocument.model';
 import { EmployeeDetail } from './EmployeeDetail.model';
+import { Notification } from './Notification.model';
 
 // Define associations after all models are loaded
 // ApprovalRequest associations
@@ -51,3 +53,5 @@ ApprovalStep.belongsTo(Employee, {
   foreignKey: 'approverId',
   as: 'approver',
 });
+
+// Notification associations are defined in Notification.model.ts

@@ -26,6 +26,7 @@ This API documentation is organized by module for easier navigation and maintena
 - [Employee Documents](./16-employee-documents.md) - Document upload, storage, and verification
 - [Employee Details](./17-employee-details.md) - Additional employee information management
 - [S3 Usage & Free Tier](./18-s3-usage.md) - AWS S3 usage monitoring and free tier optimization
+- [Notification Management](./19-notifications.md) - Notification system with in-app, email, and push support
 
 ## Quick Start
 
