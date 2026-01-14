@@ -97,12 +97,12 @@ CREATE INDEX IF NOT EXISTS idx_departments_parent_id ON "Departments"("parentDep
 -- Employees Table with self-referential hierarchy and company support
 CREATE TABLE IF NOT EXISTS "Employees" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "userId" VARCHAR(255) NOT NULL UNIQUE,
+    "userEmail" VARCHAR(255) NOT NULL UNIQUE,
     "companyId" UUID NOT NULL,
     "employeeId" VARCHAR(255) NOT NULL,
     "firstName" VARCHAR(255) NOT NULL,
     "lastName" VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    "userCompEmail" VARCHAR(255) NOT NULL,
     "phoneNumber" VARCHAR(50),
     "dateOfBirth" DATE,
     address TEXT,
@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS "Employees" (
     "hireDate" DATE NOT NULL,
     salary DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
+    role VARCHAR(50),
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_employee_company FOREIGN KEY ("companyId") REFERENCES "Companies"(id) ON DELETE CASCADE,
@@ -122,8 +123,8 @@ CREATE TABLE IF NOT EXISTS "Employees" (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_employees_company_id ON "Employees"("companyId");
 CREATE INDEX IF NOT EXISTS idx_employees_company_employee_id ON "Employees"("companyId", "employeeId");
-CREATE INDEX IF NOT EXISTS idx_employees_email ON "Employees"(email);
-CREATE INDEX IF NOT EXISTS idx_employees_user_id ON "Employees"("userId");
+CREATE INDEX IF NOT EXISTS idx_employees_user_comp_email ON "Employees"("userCompEmail");
+CREATE INDEX IF NOT EXISTS idx_employees_user_email ON "Employees"("userEmail");
 CREATE INDEX IF NOT EXISTS idx_employees_manager_id ON "Employees"("managerId");
 CREATE INDEX IF NOT EXISTS idx_employees_department ON "Employees"(department);
 CREATE INDEX IF NOT EXISTS idx_employees_status ON "Employees"(status);

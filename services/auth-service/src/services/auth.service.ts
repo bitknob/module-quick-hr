@@ -1,7 +1,14 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { User } from '../models/User.model';
-import { UserRole, ConflictError, NotFoundError, ValidationError, UnauthorizedError, logger } from '@hrm/common';
+import {
+  UserRole,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+  UnauthorizedError,
+  logger,
+} from '@hrm/common';
 import { generateAccessToken, generateRefreshToken, JWTPayload } from '../config/jwt';
 import { sendEmail } from '../config/email';
 import { v4 as uuidv4 } from 'uuid';
@@ -47,7 +54,7 @@ export class AuthService {
     role?: UserRole;
   }): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     logger.info(`Starting signup for email: ${data.email}`);
-    
+
     const existingUser = await User.findOne({ where: { email: data.email } });
     if (existingUser) {
       throw new ConflictError('Email already registered');
@@ -59,16 +66,18 @@ export class AuthService {
         throw new ConflictError('Phone number already registered');
       }
     }
-    
+
     logger.info(`Email and phone checks passed for: ${data.email}`);
 
     logger.info(`Hashing password for: ${data.email}`);
     const hashedPassword = await this.hashPassword(data.password);
     logger.info(`Password hashed for: ${data.email}`);
-    
+
     const verificationToken = this.generateVerificationToken();
     const verificationTokenExpiry = new Date();
-    verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS);
+    verificationTokenExpiry.setHours(
+      verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS
+    );
 
     logger.info(`Creating user in database for: ${data.email}`);
     const user = await User.create({
@@ -105,7 +114,7 @@ export class AuthService {
     logger.info(`Generating tokens for user: ${user.id}`);
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken({ userId: user.id });
-    
+
     logger.info(`Signup completed successfully for: ${data.email}`);
 
     // Convert Sequelize model to plain object
@@ -114,22 +123,25 @@ export class AuthService {
     return { user: userPlain as User, accessToken, refreshToken };
   }
 
-  static async login(email: string, password: string): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  static async login(
+    email: string,
+    password: string
+  ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     // Use raw SQL query to avoid Sequelize issues
-    const [users] = await sequelize.query(
+    const [users] = (await sequelize.query(
       'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
       {
         replacements: { email: email.trim() },
-        type: QueryTypes.SELECT
+        type: QueryTypes.SELECT,
       }
-    ) as any[];
+    )) as any[];
 
     if (!users) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
     const userData = users as any;
-    
+
     if (!userData.password) {
       throw new UnauthorizedError('Invalid email or password');
     }
@@ -144,10 +156,12 @@ export class AuthService {
     }
 
     // Update lastLogin (fire and forget)
-    sequelize.query(
-      'UPDATE "Users" SET "lastLogin" = NOW() WHERE id = :id',
-      { replacements: { id: userData.id }, type: QueryTypes.UPDATE }
-    ).catch(() => {});
+    sequelize
+      .query('UPDATE "Users" SET "lastLogin" = NOW() WHERE id = :id', {
+        replacements: { id: userData.id },
+        type: QueryTypes.UPDATE,
+      })
+      .catch(() => {});
 
     const payload: JWTPayload = {
       userId: userData.id,
@@ -159,7 +173,7 @@ export class AuthService {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken({ userId: userData.id });
 
-    return { 
+    return {
       user: {
         id: userData.id,
         email: userData.email,
@@ -169,9 +183,9 @@ export class AuthService {
         phoneVerified: userData.phoneVerified,
         isActive: userData.isActive,
         password: '',
-      } as User, 
-      accessToken, 
-      refreshToken 
+      } as User,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -210,7 +224,9 @@ export class AuthService {
 
     const verificationToken = this.generateVerificationToken();
     const verificationTokenExpiry = new Date();
-    verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS);
+    verificationTokenExpiry.setHours(
+      verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS
+    );
 
     user.verificationToken = verificationToken;
     user.verificationTokenExpiry = verificationTokenExpiry;
@@ -268,7 +284,11 @@ export class AuthService {
     return user;
   }
 
-  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  static async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
     const user = await User.findByPk(userId);
     if (!user) {
       throw new NotFoundError('User not found');
@@ -298,7 +318,9 @@ export class AuthService {
       return;
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+    const verificationUrl = `${
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    }/verify-email?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -335,7 +357,9 @@ export class AuthService {
       return;
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const resetUrl = `${
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    }/reset-password?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -365,5 +389,86 @@ export class AuthService {
       text: `Reset your password by visiting: ${resetUrl}`,
     });
   }
-}
 
+  /**
+   * Assign a role to a user
+   * @param userId - User ID to assign role to
+   * @param role - Role to assign
+   * @param assignedBy - User ID of the person assigning the role
+   * @returns Updated user
+   */
+  static async assignUserRole(userId: string, role: UserRole, assignedBy: string): Promise<User> {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate that the role is a valid UserRole
+    if (!Object.values(UserRole).includes(role)) {
+      throw new ValidationError('Invalid role specified');
+    }
+
+    const oldRole = user.role;
+    user.role = role;
+    await user.save();
+
+    logger.info(`Role changed for user ${userId} from ${oldRole} to ${role} by ${assignedBy}`);
+
+    return user;
+  }
+
+  /**
+   * Get user by ID with role information
+   * @param userId - User ID
+   * @returns User with role information
+   */
+  static async getUserWithRole(userId: string): Promise<User> {
+    const user = await User.findByPk(userId, {
+      attributes: [
+        'id',
+        'email',
+        'phoneNumber',
+        'role',
+        'emailVerified',
+        'phoneVerified',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    return user;
+  }
+
+  /**
+   * Get user by email with role information
+   * @param email - User email
+   * @returns User with role information
+   */
+  static async getUserByEmailWithRole(email: string): Promise<User> {
+    const user = await User.findOne({
+      where: { email: email.toLowerCase().trim() },
+      attributes: [
+        'id',
+        'email',
+        'phoneNumber',
+        'role',
+        'emailVerified',
+        'phoneVerified',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    return user;
+  }
+}

@@ -19,11 +19,11 @@ export const enrichEmployeeContext = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user?.uid) {
+    if (!req.user?.email) {
       return next();
     }
 
-    const employee = await EmployeeQueries.findByUserId(req.user.uid);
+    const employee = await EmployeeQueries.findByUserEmail(req.user.email);
     if (employee) {
       req.employee = {
         id: employee.id,
@@ -39,11 +39,7 @@ export const enrichEmployeeContext = async (
 };
 
 export const checkCompanyAccess = (targetCompanyId?: string) => {
-  return async (
-    req: EnrichedAuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  return async (req: EnrichedAuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user?.role) {
         return next(new ForbiddenError('User role not found'));
@@ -72,11 +68,7 @@ export const checkCompanyAccess = (targetCompanyId?: string) => {
 };
 
 export const checkEmployeeAccess = () => {
-  return async (
-    req: EnrichedAuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  return async (req: EnrichedAuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user?.role) {
         return next(new ForbiddenError('User role not found'));
@@ -124,9 +116,10 @@ export const checkEmployeeAccess = () => {
           req.employee.id,
           req.employee.companyId
         );
-        const hasAccess = subordinates.some((emp) => emp.id === targetEmployeeId) || 
-                         req.employee.id === targetEmployeeId;
-        
+        const hasAccess =
+          subordinates.some((emp) => emp.id === targetEmployeeId) ||
+          req.employee.id === targetEmployeeId;
+
         if (!hasAccess) {
           return next(new ForbiddenError('Access denied: Employee not in your team'));
         }
@@ -139,4 +132,3 @@ export const checkEmployeeAccess = () => {
     }
   };
 };
-

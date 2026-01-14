@@ -1,5 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, ResponseFormatter, ValidationError, UserRole, NotFoundError } from '@hrm/common';
+import {
+  AuthRequest,
+  ResponseFormatter,
+  ValidationError,
+  UserRole,
+  NotFoundError,
+} from '@hrm/common';
 import { LeaveService } from '../services/leave.service';
 import { EmployeeQueries } from '../queries/employee.queries';
 import { z } from 'zod';
@@ -9,15 +15,29 @@ const createLeaveRequestSchema = z.object({
   employeeId: z.string().uuid('Invalid employee ID'),
   companyId: z.string().uuid('Invalid company ID'),
   leaveType: z.nativeEnum(LeaveType),
-  startDate: z.string().or(z.date()).transform((val) => (typeof val === 'string' ? new Date(val) : val)),
-  endDate: z.string().or(z.date()).transform((val) => (typeof val === 'string' ? new Date(val) : val)),
+  startDate: z
+    .string()
+    .or(z.date())
+    .transform((val) => (typeof val === 'string' ? new Date(val) : val)),
+  endDate: z
+    .string()
+    .or(z.date())
+    .transform((val) => (typeof val === 'string' ? new Date(val) : val)),
   reason: z.string().optional(),
 });
 
 const updateLeaveRequestSchema = z.object({
   leaveType: z.nativeEnum(LeaveType).optional(),
-  startDate: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
-  endDate: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  startDate: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  endDate: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
   reason: z.string().optional(),
 });
 
@@ -119,7 +139,17 @@ export const approveLeaveRequest = async (
     const { id } = req.params;
     const companyId = req.query.companyId as string | undefined;
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.DEPARTMENT_HEAD].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.MANAGER,
+        UserRole.DEPARTMENT_HEAD,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to approve leave request'));
     }
 
@@ -145,7 +175,17 @@ export const rejectLeaveRequest = async (
     const { id } = req.params;
     const companyId = req.query.companyId as string | undefined;
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.DEPARTMENT_HEAD].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.MANAGER,
+        UserRole.DEPARTMENT_HEAD,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to reject leave request'));
     }
 
@@ -174,22 +214,31 @@ export const getLeavesByEmployee = async (
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
     const status = req.query.status as LeaveStatus | undefined;
 
-    // Check if the employeeId parameter is actually a userId
-    // First try to find by employee ID, then by userId
+    // Check if the employeeId parameter is actually a userEmail
+    // First try to find by employee ID, then by userEmail
     let actualEmployeeId = employeeId;
     let employee = await EmployeeQueries.findById(employeeId, companyId);
-    
+
     if (!employee) {
-      // Try to find by userId
-      employee = await EmployeeQueries.findByUserId(employeeId);
-      if (employee) {
-        actualEmployeeId = employee.id;
-      } else {
+      // Try to find by userEmail (check if it's an email format)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(employeeId)) {
+        employee = await EmployeeQueries.findByUserEmail(employeeId);
+        if (employee) {
+          actualEmployeeId = employee.id;
+        }
+      }
+
+      if (!employee) {
         // Employee not found - check if it's the current user requesting their own data
         // Users without employee records don't have leaves, so return empty array
-        const currentUserId = req.user?.uid || req.user?.userId;
-        if (currentUserId && currentUserId === employeeId) {
-          ResponseFormatter.success(res, [], 'Leave requests retrieved successfully (no employee record)');
+        const currentUserEmail = req.user?.email;
+        if (currentUserEmail && currentUserEmail === employeeId) {
+          ResponseFormatter.success(
+            res,
+            [],
+            'Leave requests retrieved successfully (no employee record)'
+          );
           return;
         }
         // For other users, return 404
@@ -212,10 +261,14 @@ export const getLeavesByEmployee = async (
     // Handle NotFoundError - if user is requesting their own data, return empty array
     if (error instanceof NotFoundError && error.message?.includes('Employee')) {
       const { employeeId } = req.params;
-      const currentUserId = req.user?.uid || req.user?.userId;
-      if (currentUserId && currentUserId === employeeId) {
+      const currentUserEmail = req.user?.email;
+      if (currentUserEmail && currentUserEmail === employeeId) {
         // User is requesting their own data but has no employee record
-        ResponseFormatter.success(res, [], 'Leave requests retrieved successfully (no employee record)');
+        ResponseFormatter.success(
+          res,
+          [],
+          'Leave requests retrieved successfully (no employee record)'
+        );
         return;
       }
     }
@@ -304,4 +357,3 @@ export const searchLeaves = async (
     next(error);
   }
 };
-

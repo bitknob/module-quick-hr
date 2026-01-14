@@ -5,12 +5,12 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class EmployeeService {
   static async createEmployee(data: {
-    userId: string;
+    userEmail: string;
     companyId: string;
     employeeId: string;
     firstName: string;
     lastName: string;
-    email: string;
+    userCompEmail: string;
     phoneNumber?: string;
     dateOfBirth?: Date;
     address?: string;
@@ -20,10 +20,10 @@ export class EmployeeService {
     hireDate: Date;
     salary?: number;
   }): Promise<Employee> {
-    // Check for duplicate userId first
-    const existingUserId = await Employee.findOne({ where: { userId: data.userId } });
-    if (existingUserId) {
-      throw new ConflictError('An employee record already exists for this user');
+    // Check for duplicate userEmail first
+    const existingUserEmail = await Employee.findOne({ where: { userEmail: data.userEmail } });
+    if (existingUserEmail) {
+      throw new ConflictError('An employee record already exists for this user email');
     }
 
     const existingEmployee = await EmployeeQueries.findByEmployeeId(
@@ -34,9 +34,9 @@ export class EmployeeService {
       throw new ConflictError('Employee ID already exists in this company');
     }
 
-    const existingEmail = await Employee.findOne({ where: { email: data.email } });
+    const existingEmail = await Employee.findOne({ where: { userCompEmail: data.userCompEmail } });
     if (existingEmail) {
-      throw new ConflictError('Email already exists');
+      throw new ConflictError('Company email already exists');
     }
 
     // Normalize empty strings to null/undefined for optional fields
@@ -82,8 +82,8 @@ export class EmployeeService {
     return employee;
   }
 
-  static async getEmployeeByUserId(userId: string): Promise<Employee> {
-    const employee = await EmployeeQueries.findByUserId(userId);
+  static async getEmployeeByUserEmail(userEmail: string): Promise<Employee> {
+    const employee = await EmployeeQueries.findByUserEmail(userEmail);
     if (!employee) {
       throw new NotFoundError('Employee');
     }

@@ -13,7 +13,11 @@ const createNotificationSchema = z.object({
   message: z.string().min(1, 'Message is required'),
   data: z.record(z.any()).optional(),
   channels: z.array(z.nativeEnum(NotificationChannel)).optional(),
-  scheduledFor: z.string().datetime().optional().transform((val) => val ? new Date(val) : undefined),
+  scheduledFor: z
+    .string()
+    .datetime()
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
 });
 
 export const createNotification = async (
@@ -28,7 +32,7 @@ export const createNotification = async (
     }
 
     const validatedData = createNotificationSchema.parse(req.body);
-    
+
     const notification = await NotificationService.createNotification({
       companyId: companyId as string,
       userId: validatedData.userId,
@@ -58,7 +62,7 @@ export const sendNotification = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const notification = await NotificationService.sendNotification(id);
     const notificationData = notification.toJSON ? notification.toJSON() : notification;
 
@@ -108,12 +112,12 @@ export const getCurrentEmployeeNotifications = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.uid || req.user?.userId;
-    if (!userId) {
-      return next(new ValidationError('User ID is required'));
+    const userEmail = req.user?.email;
+    if (!userEmail) {
+      return next(new ValidationError('User email is required'));
     }
 
-    const employee = await EmployeeQueries.findByUserId(userId);
+    const employee = await EmployeeQueries.findByUserEmail(userEmail);
     if (!employee) {
       ResponseFormatter.success(res, [], 'No employee record found');
       return;
@@ -149,7 +153,7 @@ export const getNotification = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const notification = await NotificationService.getNotificationById(id);
     const notificationData = notification.toJSON ? notification.toJSON() : notification;
 
@@ -166,7 +170,7 @@ export const markAsRead = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     await NotificationService.markAsRead(id);
 
     ResponseFormatter.success(res, null, 'Notification marked as read');
@@ -185,7 +189,7 @@ export const markAllAsRead = async (
     if (!userId) {
       return next(new ValidationError('User ID is required'));
     }
-    
+
     const count = await NotificationService.markAllAsRead(userId);
 
     ResponseFormatter.success(res, { count }, `${count} notifications marked as read`);
@@ -204,7 +208,7 @@ export const getUnreadCount = async (
     if (!userId) {
       return next(new ValidationError('User ID is required'));
     }
-    
+
     const count = await NotificationService.getUnreadCount(userId);
 
     ResponseFormatter.success(res, { count }, 'Unread count retrieved successfully');
@@ -220,7 +224,7 @@ export const deleteNotification = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     await NotificationService.deleteNotification(id);
 
     ResponseFormatter.success(res, null, 'Notification deleted successfully');
@@ -228,4 +232,3 @@ export const deleteNotification = async (
     next(error);
   }
 };
-

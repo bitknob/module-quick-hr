@@ -2,7 +2,6 @@
 
 [← Back to API Documentation Index](./README.md)
 
-
 Base Path: `/api/employees`
 
 All employee endpoints require authentication.
@@ -15,10 +14,12 @@ All employee endpoints require authentication.
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Returns the employee record associated with the authenticated user. Returns 404 if no employee record exists.
 - **Super Admins / Provider Admins / Provider HR Staff:** If no employee record exists, returns user information indicating they are a Super Admin without an employee record (instead of 404).
 
 **Response (200) - With Employee Record:**
+
 ```json
 {
   "header": {
@@ -28,18 +29,18 @@ All employee endpoints require authentication.
   },
   "response": {
     "id": "uuid",
-    "userId": "user_uuid",
+    "userEmail": "john.doe@example.com",
     "companyId": "company_uuid",
     "employeeId": "EMP001",
     "firstName": "John",
     "lastName": "Doe",
-    "email": "john.doe@example.com",
+    "userCompEmail": "john.doe@company.com",
     "phoneNumber": "+1234567890",
     "jobTitle": "Software Engineer",
     "department": "Engineering",
     "managerId": "manager_uuid",
     "hireDate": "2024-01-01",
-    "salary": 75000.00,
+    "salary": 75000.0,
     "status": "active",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -48,6 +49,7 @@ All employee endpoints require authentication.
 ```
 
 **Response (200) - Super Admin Without Employee Record:**
+
 ```json
 {
   "header": {
@@ -57,7 +59,7 @@ All employee endpoints require authentication.
   },
   "response": {
     "id": null,
-    "userId": "user_uuid",
+    "userEmail": "admin@quickhr.com",
     "email": "admin@quickhr.com",
     "role": "super_admin",
     "isSuperAdmin": true,
@@ -67,6 +69,7 @@ All employee endpoints require authentication.
 ```
 
 **Response (404) - Regular User Without Employee Record:**
+
 ```json
 {
   "header": {
@@ -79,12 +82,14 @@ All employee endpoints require authentication.
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Super Admins, Provider Admins, and Provider HR Staff can access this endpoint even without an employee record
 - The response for Super Admins without employee records includes `isSuperAdmin: true` and `hasEmployeeRecord: false` to help frontend applications adjust the UI accordingly
 - Regular users (employees, managers, etc.) will receive a 404 error if they don't have an employee record
@@ -99,11 +104,13 @@ curl -X GET http://localhost:9400/api/employees/me \
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 - `documentType` (string, optional) - Filter by document type (see [Employee Documents API](./16-employee-documents.md) for available types)
 - `status` (string, optional) - Filter by status: `pending`, `verified`, `rejected`, `expired`
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -131,6 +138,7 @@ curl -X GET http://localhost:9400/api/employees/me \
 ```
 
 **Response (200) - No Employee Record:**
+
 ```json
 {
   "header": {
@@ -143,12 +151,14 @@ curl -X GET http://localhost:9400/api/employees/me \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card&status=verified" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Returns documents for the authenticated user's employee record
 - If the user doesn't have an employee record, returns an empty array
 - For more information about document types and operations, see [Employee Documents API](./16-employee-documents.md)
@@ -163,9 +173,11 @@ curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
-**Response (200):**
+**Response (200) - Success with Data:**
+
 ```json
 {
   "header": {
@@ -197,7 +209,7 @@ curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card
     "currentAddress": "456 Current St, City, State, ZIP",
     "previousEmployer": "Previous Company",
     "previousDesignation": "Senior Developer",
-    "previousSalary": 80000.00,
+    "previousSalary": 80000.0,
     "noticePeriod": 30,
     "skills": ["JavaScript", "TypeScript", "Node.js", "React"],
     "languages": ["English", "Hindi", "Spanish"],
@@ -218,29 +230,73 @@ curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card
 }
 ```
 
-**Response (404) - No Employee Record:**
+**Response (200) - No Employee Record:**
+
+> **Note:** Returns HTTP 200 with responseCode 404 in body to prevent UI error pages
+
 ```json
 {
   "header": {
     "responseCode": 404,
     "responseMessage": "Employee record not found",
-    "responseDetail": ""
+    "responseDetail": "Please create an employee profile to access this information."
   },
   "response": null
 }
 ```
 
+**HTTP Status:** `200 OK`
+
+**Response (200) - No Employee Details:**
+
+> **Note:** Returns HTTP 200 with responseCode 404 in body to prevent UI error pages
+
+```json
+{
+  "header": {
+    "responseCode": 404,
+    "responseMessage": "Employee detail not found",
+    "responseDetail": "No additional details have been added for this employee yet."
+  },
+  "response": null
+}
+```
+
+**HTTP Status:** `200 OK`
+
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Returns employee details for the authenticated user's employee record
-- If the user doesn't have an employee record, returns 404
-- If the employee record exists but details haven't been created, returns 404
+- **Always returns HTTP 200** - check `responseCode` in the response body for actual status
+- If the user doesn't have an employee record, returns HTTP 200 with `responseCode: 404` in body
+- If the employee record exists but details haven't been created, returns HTTP 200 with `responseCode: 404` in body
+- This pattern prevents UI error pages from showing when data simply doesn't exist yet
+- Frontend should check `response.header.responseCode` to determine if data was found
 - For more information about employee details fields and operations, see [Employee Details API](./17-employee-details.md)
+
+**Frontend Handling Example:**
+
+```javascript
+const response = await fetch('/api/employees/details', {
+  headers: { Authorization: `Bearer ${token}` },
+});
+const data = await response.json();
+
+if (data.header.responseCode === 200) {
+  // Data found - display it
+  displayEmployeeDetails(data.response);
+} else if (data.header.responseCode === 404) {
+  // No data yet - show empty state or prompt to add details
+  showEmptyState(data.header.responseMessage);
+}
+```
 
 ---
 
@@ -253,14 +309,15 @@ curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid"
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Request Body:**
+
 ```json
 {
-  "userId": "user_uuid",
+  "userEmail": "jane.smith@example.com",
   "companyId": "company_uuid",
   "employeeId": "EMP002",
   "firstName": "Jane",
   "lastName": "Smith",
-  "email": "jane.smith@example.com",
+  "userCompEmail": "jane.smith@company.com",
   "phoneNumber": "+1234567891",
   "dateOfBirth": "1990-01-01",
   "address": "123 Main St",
@@ -268,11 +325,12 @@ curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid"
   "department": "Engineering",
   "managerId": "manager_uuid",
   "hireDate": "2024-01-15",
-  "salary": 90000.00
+  "salary": 90000.0
 }
 ```
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -282,12 +340,12 @@ curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid"
   },
   "response": {
     "id": "uuid",
-    "userId": "user_uuid",
+    "userEmail": "jane.smith@example.com",
     "companyId": "company_uuid",
     "employeeId": "EMP002",
     "firstName": "Jane",
     "lastName": "Smith",
-    "email": "jane.smith@example.com",
+    "userCompEmail": "jane.smith@company.com",
     "jobTitle": "Senior Developer",
     "department": "Engineering",
     "status": "active",
@@ -298,17 +356,18 @@ curl -X GET "http://localhost:9400/api/employees/details?companyId=company_uuid"
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/employees \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": "user_uuid",
+    "userEmail": "jane.smith@example.com",
     "companyId": "company_uuid",
     "employeeId": "EMP002",
     "firstName": "Jane",
     "lastName": "Smith",
-    "email": "jane.smith@example.com",
+    "userCompEmail": "jane.smith@company.com",
     "jobTitle": "Senior Developer",
     "department": "Engineering",
     "hireDate": "2024-01-15"
@@ -326,9 +385,11 @@ curl -X POST http://localhost:9400/api/employees \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -359,6 +420,7 @@ curl -X POST http://localhost:9400/api/employees \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>"
@@ -376,19 +438,22 @@ curl -X GET http://localhost:9400/api/employees/{employee_id} \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Request Body:**
+
 ```json
 {
   "firstName": "John Updated",
   "phoneNumber": "+1234567899",
   "jobTitle": "Senior Software Engineer",
-  "salary": 85000.00
+  "salary": 85000.0
 }
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -401,13 +466,14 @@ curl -X GET http://localhost:9400/api/employees/{employee_id} \
     "firstName": "John Updated",
     "phoneNumber": "+1234567899",
     "jobTitle": "Senior Software Engineer",
-    "salary": 85000.00,
+    "salary": 85000.0,
     "updatedAt": "2024-01-15T10:00:00.000Z"
   }
 }
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -430,9 +496,11 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id} \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -445,6 +513,7 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>"
@@ -460,6 +529,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `page` (number, optional) - Page number (default: 1)
 - `limit` (number, optional) - Items per page (default: 20)
 - `searchTerm` (string, optional) - Search in name, email, employeeId
@@ -469,6 +539,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 - `companyId` (string, optional) - Filter by company (for provider roles)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -492,6 +563,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTerm=john&department=Engineering" \
   -H "Authorization: Bearer <access_token>"
@@ -507,10 +579,12 @@ curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTe
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `rootId` (string, optional) - Root employee ID (default: top-level employees)
 - `companyId` (string, optional) - Filter by company
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -530,6 +604,7 @@ curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTe
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_id" \
   -H "Authorization: Bearer <access_token>"
@@ -545,9 +620,11 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `managerId` (string, required) - Manager employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -569,6 +646,7 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-reports \
   -H "Authorization: Bearer <access_token>"
@@ -584,9 +662,11 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `managerId` (string, required) - Manager employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -610,6 +690,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinates \
   -H "Authorization: Bearer <access_token>"
@@ -627,9 +708,11 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Request Body:**
+
 ```json
 {
   "newManagerId": "new_manager_uuid"
@@ -637,6 +720,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -653,6 +737,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
   -H "Authorization: Bearer <access_token>" \

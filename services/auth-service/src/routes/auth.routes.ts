@@ -9,6 +9,9 @@ import {
   changePassword,
   refreshToken,
   getCurrentUser,
+  assignUserRole,
+  getUserRole,
+  getUserRoleByEmail,
 } from '../controllers/auth.controller';
 import { getMenu } from '../controllers/menu.controller';
 import { authenticate, authorize } from '../middleware/auth';
@@ -29,5 +32,14 @@ router.use(authenticate);
 router.get('/me', getCurrentUser);
 router.get('/menu', getMenu);
 router.post('/change-password', changePassword);
+
+// Role assignment endpoints
+router.post(
+  '/assign-role',
+  authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN),
+  assignUserRole
+);
+router.get('/users/:userId/role', getUserRole);
+router.get('/users/email/:email/role', getUserRoleByEmail);
 
 export default router;

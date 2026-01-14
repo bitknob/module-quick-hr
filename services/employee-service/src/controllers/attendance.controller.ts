@@ -1,5 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, ResponseFormatter, ValidationError, UserRole, NotFoundError } from '@hrm/common';
+import {
+  AuthRequest,
+  ResponseFormatter,
+  ValidationError,
+  UserRole,
+  NotFoundError,
+} from '@hrm/common';
 import { AttendanceService } from '../services/attendance.service';
 import { EmployeeQueries } from '../queries/employee.queries';
 import { z } from 'zod';
@@ -8,16 +14,35 @@ import { AttendanceStatus } from '@hrm/common';
 const createAttendanceSchema = z.object({
   employeeId: z.string().uuid('Invalid employee ID'),
   companyId: z.string().uuid('Invalid company ID'),
-  date: z.string().or(z.date()).transform((val) => (typeof val === 'string' ? new Date(val) : val)),
-  checkIn: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
-  checkOut: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  date: z
+    .string()
+    .or(z.date())
+    .transform((val) => (typeof val === 'string' ? new Date(val) : val)),
+  checkIn: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  checkOut: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
   status: z.nativeEnum(AttendanceStatus).optional(),
   notes: z.string().optional(),
 });
 
 const updateAttendanceSchema = z.object({
-  checkIn: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
-  checkOut: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  checkIn: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  checkOut: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
   status: z.nativeEnum(AttendanceStatus).optional(),
   notes: z.string().optional(),
 });
@@ -29,7 +54,16 @@ export const createAttendance = async (
 ): Promise<void> => {
   try {
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.MANAGER].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.MANAGER,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to create attendance'));
     }
 
@@ -53,18 +87,18 @@ export const getAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!id || id === 'undefined') {
       return next(new ValidationError('Attendance ID is required'));
     }
-    
+
     // Handle optional companyId - convert 'undefined' string to undefined
     let companyId = req.query.companyId as string | undefined;
     if (companyId === 'undefined') {
       companyId = undefined;
     }
-    
+
     const attendance = await AttendanceService.getAttendanceById(id, companyId);
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
@@ -81,19 +115,28 @@ export const updateAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!id || id === 'undefined') {
       return next(new ValidationError('Attendance ID is required'));
     }
-    
+
     // Handle optional companyId - convert 'undefined' string to undefined
     let companyId = req.query.companyId as string | undefined;
     if (companyId === 'undefined') {
       companyId = undefined;
     }
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.MANAGER].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.MANAGER,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to update attendance'));
     }
 
@@ -117,19 +160,27 @@ export const deleteAttendance = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!id || id === 'undefined') {
       return next(new ValidationError('Attendance ID is required'));
     }
-    
+
     // Handle optional companyId - convert 'undefined' string to undefined
     let companyId = req.query.companyId as string | undefined;
     if (companyId === 'undefined') {
       companyId = undefined;
     }
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to delete attendance'));
     }
 
@@ -147,37 +198,46 @@ export const getAttendanceByEmployee = async (
 ): Promise<void> => {
   try {
     const { employeeId } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!employeeId || employeeId === 'undefined') {
       return next(new ValidationError('Employee ID is required'));
     }
-    
+
     // Handle optional companyId - convert 'undefined' string to undefined
     let companyId = req.query.companyId as string | undefined;
     if (companyId === 'undefined') {
       companyId = undefined;
     }
-    
+
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
-    // Check if the employeeId parameter is actually a userId
-    // First try to find by employee ID, then by userId
+    // Check if the employeeId parameter is actually a userEmail
+    // First try to find by employee ID, then by userEmail
     let actualEmployeeId = employeeId;
     let employee = await EmployeeQueries.findById(employeeId, companyId);
-    
+
     if (!employee) {
-      // Try to find by userId
-      employee = await EmployeeQueries.findByUserId(employeeId);
-      if (employee) {
-        actualEmployeeId = employee.id;
-      } else {
+      // Try to find by userEmail (check if it's an email format)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(employeeId)) {
+        employee = await EmployeeQueries.findByUserEmail(employeeId);
+        if (employee) {
+          actualEmployeeId = employee.id;
+        }
+      }
+
+      if (!employee) {
         // Employee not found - check if it's the current user requesting their own data
         // Users without employee records don't have attendance, so return empty array
-        const currentUserId = req.user?.uid || req.user?.userId;
-        if (currentUserId && currentUserId === employeeId) {
-          ResponseFormatter.success(res, [], 'Attendances retrieved successfully (no employee record)');
+        const currentUserEmail = req.user?.email;
+        if (currentUserEmail && currentUserEmail === employeeId) {
+          ResponseFormatter.success(
+            res,
+            [],
+            'Attendances retrieved successfully (no employee record)'
+          );
           return;
         }
         // For other users, return 404
@@ -199,10 +259,14 @@ export const getAttendanceByEmployee = async (
     // Handle NotFoundError - if user is requesting their own data, return empty array
     if (error instanceof NotFoundError && error.message?.includes('Employee')) {
       const { employeeId } = req.params;
-      const currentUserId = req.user?.uid || req.user?.userId;
-      if (currentUserId && currentUserId === employeeId) {
+      const currentUserEmail = req.user?.email;
+      if (currentUserEmail && currentUserEmail === employeeId) {
         // User is requesting their own data but has no employee record
-        ResponseFormatter.success(res, [], 'Attendances retrieved successfully (no employee record)');
+        ResponseFormatter.success(
+          res,
+          [],
+          'Attendances retrieved successfully (no employee record)'
+        );
         return;
       }
     }
@@ -218,12 +282,12 @@ export const getAttendanceByCompany = async (
 ): Promise<void> => {
   try {
     const { companyId } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!companyId || companyId === 'undefined') {
       return next(new ValidationError('Company ID is required'));
     }
-    
+
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
     const status = req.query.status as AttendanceStatus | undefined;
@@ -266,7 +330,12 @@ export const getAttendanceStats = async (
     }
 
     // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
-    const stats = await AttendanceService.getAttendanceStats(employeeId as string, companyId as string, month, year);
+    const stats = await AttendanceService.getAttendanceStats(
+      employeeId as string,
+      companyId as string,
+      month,
+      year
+    );
     ResponseFormatter.success(res, stats, 'Attendance stats retrieved successfully');
   } catch (error) {
     next(error);
@@ -280,7 +349,7 @@ export const checkIn = async (
 ): Promise<void> => {
   try {
     const { employeeId, companyId } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!employeeId || employeeId === 'undefined') {
       return next(new ValidationError('Employee ID is required'));
@@ -292,7 +361,11 @@ export const checkIn = async (
     const checkInTime = req.body.checkInTime ? new Date(req.body.checkInTime) : undefined;
 
     // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
-    const attendance = await AttendanceService.checkIn(employeeId as string, companyId as string, checkInTime);
+    const attendance = await AttendanceService.checkIn(
+      employeeId as string,
+      companyId as string,
+      checkInTime
+    );
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
     ResponseFormatter.success(res, attendanceData, 'Checked in successfully', '', 201);
@@ -308,7 +381,7 @@ export const checkOut = async (
 ): Promise<void> => {
   try {
     const { employeeId, companyId } = req.params;
-    
+
     // Validate required parameters - handle 'undefined' string
     if (!employeeId || employeeId === 'undefined') {
       return next(new ValidationError('Employee ID is required'));
@@ -320,7 +393,11 @@ export const checkOut = async (
     const checkOutTime = req.body.checkOutTime ? new Date(req.body.checkOutTime) : undefined;
 
     // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
-    const attendance = await AttendanceService.checkOut(employeeId as string, companyId as string, checkOutTime);
+    const attendance = await AttendanceService.checkOut(
+      employeeId as string,
+      companyId as string,
+      checkOutTime
+    );
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;
 
     ResponseFormatter.success(res, attendanceData, 'Checked out successfully');
@@ -361,4 +438,3 @@ export const searchAttendances = async (
     next(error);
   }
 };
-

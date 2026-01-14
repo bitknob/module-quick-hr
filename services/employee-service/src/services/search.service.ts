@@ -48,14 +48,14 @@ export class SearchService {
     if (this.canSearchEmployees(userRole)) {
       const employeeLimit = Math.ceil(limit * 0.4); // 40% of results
       const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
-      
+
       const employees = await Employee.findAll({
         where: {
           ...(companyId && { companyId }),
           [Op.or]: [
             { firstName: { [Op.iLike]: `%${searchLower}%` } },
             { lastName: { [Op.iLike]: `%${searchLower}%` } },
-            { email: { [Op.iLike]: `%${searchLower}%` } },
+            { userCompEmail: { [Op.iLike]: `%${searchLower}%` } },
             { employeeId: { [Op.iLike]: `%${searchLower}%` } },
             { jobTitle: { [Op.iLike]: `%${searchLower}%` } },
             { department: { [Op.iLike]: `%${searchLower}%` } },
@@ -63,7 +63,16 @@ export class SearchService {
         },
         limit: employeeLimit,
         order: [['createdAt', 'DESC']],
-        attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId', 'jobTitle', 'department', 'companyId'],
+        attributes: [
+          'id',
+          'firstName',
+          'lastName',
+          'userCompEmail',
+          'employeeId',
+          'jobTitle',
+          'department',
+          'companyId',
+        ],
       });
 
       employees.forEach((emp) => {
@@ -76,7 +85,7 @@ export class SearchService {
           path: `/dashboard/employees/${empData.id}`,
           icon: 'user',
           metadata: {
-            email: empData.email,
+            email: empData.userCompEmail,
             employeeId: empData.employeeId,
             companyId: empData.companyId,
           },
@@ -87,7 +96,7 @@ export class SearchService {
     // Search Companies
     if (this.canSearchCompanies(userRole)) {
       const companyLimit = Math.ceil(limit * 0.3); // 30% of results
-      
+
       const companies = await Company.findAll({
         where: {
           [Op.or]: [
@@ -103,17 +112,21 @@ export class SearchService {
 
       companies.forEach((company) => {
         const companyData = company.toJSON ? company.toJSON() : company;
-        
+
         // Skip if essential fields are missing
         if (!companyData.id || !companyData.name) {
           return;
         }
-        
+
         results.push({
           type: 'company',
           id: companyData.id,
           title: companyData.name,
-          subtitle: companyData.code ? `${companyData.code}${companyData.status === 'inactive' ? ' (Inactive)' : ''}` : (companyData.status === 'inactive' ? '(Inactive)' : ''),
+          subtitle: companyData.code
+            ? `${companyData.code}${companyData.status === 'inactive' ? ' (Inactive)' : ''}`
+            : companyData.status === 'inactive'
+            ? '(Inactive)'
+            : '',
           path: `/dashboard/companies/${companyData.id}`,
           icon: 'building',
           metadata: {
@@ -129,7 +142,7 @@ export class SearchService {
     if (this.canSearchDepartments(userRole)) {
       const departmentLimit = Math.ceil(limit * 0.2); // 20% of results
       const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
-      
+
       const departments = await Department.findAll({
         where: {
           ...(companyId && { companyId }),
@@ -164,7 +177,7 @@ export class SearchService {
     if (this.canSearchMenus(userRole)) {
       const menuLimit = Math.ceil(limit * 0.1); // 10% of results
       const menuItems = this.getMenuItemsForRole(userRole);
-      
+
       const matchingMenus = menuItems
         .filter((menu) => {
           const matchesLabel = menu.label.toLowerCase().includes(searchLower);
@@ -191,12 +204,12 @@ export class SearchService {
       const bExact = b.title.toLowerCase() === searchLower;
       if (aExact && !bExact) return -1;
       if (!aExact && bExact) return 1;
-      
+
       const aStarts = a.title.toLowerCase().startsWith(searchLower);
       const bStarts = b.title.toLowerCase().startsWith(searchLower);
       if (aStarts && !bStarts) return -1;
       if (!aStarts && bStarts) return 1;
-      
+
       return a.title.localeCompare(b.title);
     });
 
@@ -228,11 +241,9 @@ export class SearchService {
   }
 
   private static canSearchCompanies(role: UserRole): boolean {
-    return [
-      UserRole.SUPER_ADMIN,
-      UserRole.PROVIDER_ADMIN,
-      UserRole.PROVIDER_HR_STAFF,
-    ].includes(role);
+    return [UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF].includes(
+      role
+    );
   }
 
   private static canSearchDepartments(role: UserRole): boolean {
@@ -251,7 +262,9 @@ export class SearchService {
     return true; // All authenticated users can search menus
   }
 
-  private static getMenuItemsForRole(role: UserRole): Array<{ id: string; label: string; path: string; icon?: string }> {
+  private static getMenuItemsForRole(
+    role: UserRole
+  ): Array<{ id: string; label: string; path: string; icon?: string }> {
     const allMenus = [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
       { id: 'companies', label: 'Companies', path: '/dashboard/companies', icon: 'building' },
@@ -265,13 +278,75 @@ export class SearchService {
     ];
 
     const roleMenus: Record<UserRole, string[]> = {
-      [UserRole.SUPER_ADMIN]: ['dashboard', 'companies', 'employees', 'departments', 'approvals', 'leave', 'attendance', 'profile', 'settings'],
-      [UserRole.PROVIDER_ADMIN]: ['dashboard', 'companies', 'employees', 'departments', 'approvals', 'leave', 'attendance', 'profile', 'settings'],
-      [UserRole.PROVIDER_HR_STAFF]: ['dashboard', 'companies', 'employees', 'departments', 'approvals', 'leave', 'attendance', 'profile', 'settings'],
-      [UserRole.HRBP]: ['dashboard', 'employees', 'departments', 'approvals', 'leave', 'attendance', 'profile', 'settings'],
-      [UserRole.COMPANY_ADMIN]: ['dashboard', 'employees', 'departments', 'approvals', 'leave', 'attendance', 'profile', 'settings'],
-      [UserRole.DEPARTMENT_HEAD]: ['dashboard', 'departments', 'approvals', 'leave', 'attendance', 'profile'],
-      [UserRole.MANAGER]: ['dashboard', 'departments', 'approvals', 'leave', 'attendance', 'profile'],
+      [UserRole.SUPER_ADMIN]: [
+        'dashboard',
+        'companies',
+        'employees',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+        'settings',
+      ],
+      [UserRole.PROVIDER_ADMIN]: [
+        'dashboard',
+        'companies',
+        'employees',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+        'settings',
+      ],
+      [UserRole.PROVIDER_HR_STAFF]: [
+        'dashboard',
+        'companies',
+        'employees',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+        'settings',
+      ],
+      [UserRole.HRBP]: [
+        'dashboard',
+        'employees',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+        'settings',
+      ],
+      [UserRole.COMPANY_ADMIN]: [
+        'dashboard',
+        'employees',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+        'settings',
+      ],
+      [UserRole.DEPARTMENT_HEAD]: [
+        'dashboard',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+      ],
+      [UserRole.MANAGER]: [
+        'dashboard',
+        'departments',
+        'approvals',
+        'leave',
+        'attendance',
+        'profile',
+      ],
       [UserRole.EMPLOYEE]: ['dashboard', 'leave', 'attendance', 'profile'],
     };
 
@@ -279,4 +354,3 @@ export class SearchService {
     return allMenus.filter((menu) => allowedMenuIds.includes(menu.id));
   }
 }
-

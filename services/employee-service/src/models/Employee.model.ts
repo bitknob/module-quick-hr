@@ -4,12 +4,12 @@ import { Company } from './Company.model';
 
 export interface EmployeeAttributes {
   id: string;
-  userId: string;
+  userEmail: string;
   companyId: string;
   employeeId: string;
   firstName: string;
   lastName: string;
-  email: string;
+  userCompEmail: string;
   phoneNumber?: string;
   dateOfBirth?: Date;
   address?: string;
@@ -19,6 +19,7 @@ export interface EmployeeAttributes {
   hireDate: Date;
   salary?: number;
   status: 'active' | 'inactive' | 'terminated';
+  role?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -31,12 +32,12 @@ export class Employee
   implements EmployeeAttributes
 {
   public id!: string;
-  public userId!: string;
+  public userEmail!: string;
   public companyId!: string;
   public employeeId!: string;
   public firstName!: string;
   public lastName!: string;
-  public email!: string;
+  public userCompEmail!: string;
   public phoneNumber?: string;
   public dateOfBirth?: Date;
   public address?: string;
@@ -46,6 +47,7 @@ export class Employee
   public hireDate!: Date;
   public salary?: number;
   public status!: 'active' | 'inactive' | 'terminated';
+  public role?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -61,10 +63,13 @@ Employee.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    userEmail: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
+      validate: {
+        isEmail: true,
+      },
     },
     companyId: {
       type: DataTypes.UUID,
@@ -86,7 +91,7 @@ Employee.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    email: {
+    userCompEmail: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
@@ -134,6 +139,10 @@ Employee.init(
       type: DataTypes.ENUM('active', 'inactive', 'terminated'),
       defaultValue: 'active',
     },
+    role: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -150,8 +159,8 @@ Employee.init(
     tableName: 'Employees',
     indexes: [
       { fields: ['companyId', 'employeeId'], unique: true },
-      { fields: ['email'] },
-      { fields: ['userId'] },
+      { fields: ['userCompEmail'] },
+      { fields: ['userEmail'] },
       { fields: ['companyId'] },
       { fields: ['managerId'] },
       { fields: ['department'] },
@@ -179,4 +188,3 @@ Company.hasMany(Employee, {
   foreignKey: 'companyId',
   as: 'employees',
 });
-

@@ -27,6 +27,8 @@ This API documentation is organized by module for easier navigation and maintena
 - [Employee Details](./17-employee-details.md) - Additional employee information management
 - [S3 Usage & Free Tier](./18-s3-usage.md) - AWS S3 usage monitoring and free tier optimization
 - [Notification Management](./19-notifications.md) - Notification system with in-app, email, and push support
+- [User Role Assignment](./20-user-role-assignment.md) - Assign and manage user roles for employees
+- [Employee Onboarding](./21-employee-onboarding.md) - Streamlined employee onboarding with combined user and employee creation
 
 ## Quick Start
 
@@ -56,4 +58,3 @@ Most endpoints require authentication. Include the JWT token in the Authorizatio
 ```
 Authorization: Bearer <access_token>
 ```
-

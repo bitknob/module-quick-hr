@@ -12,23 +12,33 @@ export interface StandardResponse<T = any> {
 }
 
 export class ResponseFormatter {
+  /**
+   * Send a success response
+   * @param res - Express response object
+   * @param data - Response data
+   * @param message - Response message
+   * @param detail - Additional detail
+   * @param httpStatus - HTTP status code (default: 200)
+   * @param responseCode - Response code in body (default: same as httpStatus)
+   */
   static success<T>(
     res: Response,
     data: T,
     message: string = 'Success',
     detail: string = '',
-    statusCode: number = 200
+    httpStatus: number = 200,
+    responseCode?: number
   ): void {
     const response: StandardResponse<T> = {
       header: {
-        responseCode: statusCode,
+        responseCode: responseCode ?? httpStatus,
         responseMessage: message,
         responseDetail: detail,
       },
       response: data,
     };
 
-    res.status(statusCode).json(response);
+    res.status(httpStatus).json(response);
   }
 
   static error(
@@ -58,7 +68,9 @@ export class ResponseFormatter {
     message: string = 'Success',
     detail: string = ''
   ): void {
-    const paginationDetail = detail || `Total: ${total}, Page: ${page}, Limit: ${limit}, Total Pages: ${Math.ceil(total / limit)}`;
+    const paginationDetail =
+      detail ||
+      `Total: ${total}, Page: ${page}, Limit: ${limit}, Total Pages: ${Math.ceil(total / limit)}`;
     const response: StandardResponse<T[]> = {
       header: {
         responseCode: 200,
@@ -71,4 +83,3 @@ export class ResponseFormatter {
     res.status(200).json(response);
   }
 }
-

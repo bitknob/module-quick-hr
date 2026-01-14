@@ -2,16 +2,24 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { DeviceService } from '../services/device.service';
 import { UserRole, ValidationError, ResponseFormatter, DeviceType } from '@hrm/common';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken, JWTPayload } from '../config/jwt';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  JWTPayload,
+} from '../config/jwt';
 import { User } from '../models/User.model';
 import { z } from 'zod';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters').regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-  ),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    ),
   phoneNumber: z.string().optional(),
   role: z.nativeEnum(UserRole).optional(),
 });
@@ -32,44 +40,47 @@ const loginSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters').regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-  ),
+  newPassword: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    ),
 });
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters').regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-  ),
+  newPassword: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    ),
 });
 
-export const signup = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const signup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const validatedData = signupSchema.parse(req.body);
-    
+
     // Restrict public signup to non-privileged roles only
     // Privileged roles (super_admin, provider_admin, provider_hr_staff) must be created by existing admins
-    if (validatedData.role && [
-      UserRole.SUPER_ADMIN,
-      UserRole.PROVIDER_ADMIN,
-      UserRole.PROVIDER_HR_STAFF,
-    ].includes(validatedData.role)) {
+    if (
+      validatedData.role &&
+      [UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF].includes(
+        validatedData.role
+      )
+    ) {
       return next(new ValidationError('Privileged roles cannot be assigned during public signup'));
     }
-    
+
     // Default to employee role if not specified
     const signupData = {
       ...validatedData,
       role: validatedData.role || UserRole.EMPLOYEE,
     };
-    
+
     const result = await AuthService.signup(signupData);
 
     ResponseFormatter.success(
@@ -96,11 +107,7 @@ export const signup = async (
   }
 };
 
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const validatedData = loginSchema.parse(req.body);
     const result = await AuthService.login(validatedData.email, validatedData.password);
@@ -140,12 +147,14 @@ export const login = async (
         },
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
-        device: device ? {
-          id: device.id,
-          deviceId: device.deviceId,
-          deviceType: device.deviceType,
-          isPrimary: device.isPrimary,
-        } : undefined,
+        device: device
+          ? {
+              id: device.id,
+              deviceId: device.deviceId,
+              deviceType: device.deviceType,
+              isPrimary: device.isPrimary,
+            }
+          : undefined,
       },
       'Login successful'
     );
@@ -266,7 +275,11 @@ export const changePassword = async (
     }
 
     const validatedData = changePasswordSchema.parse(req.body);
-    await AuthService.changePassword(userId, validatedData.currentPassword, validatedData.newPassword);
+    await AuthService.changePassword(
+      userId,
+      validatedData.currentPassword,
+      validatedData.newPassword
+    );
 
     ResponseFormatter.success(res, null, 'Password changed successfully');
   } catch (error) {
@@ -345,6 +358,207 @@ export const getCurrentUser = async (
       },
       'User retrieved successfully'
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const assignRoleSchema = z.object({
+  userId: z.string().uuid('Invalid user ID format'),
+  role: z.nativeEnum(UserRole, { errorMap: () => ({ message: 'Invalid role specified' }) }),
+});
+
+/**
+ * Assign a role to a user/employee
+ * Only super_admin and provider_admin can assign roles
+ */
+export const assignUserRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currentUserId = (req as any).user?.userId;
+    const currentUserRole = (req as any).user?.role;
+
+    if (!currentUserId) {
+      return next(new ValidationError('User not authenticated'));
+    }
+
+    // Only super_admin and provider_admin can assign roles
+    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN].includes(currentUserRole)) {
+      return next(new ValidationError('Insufficient permissions to assign roles'));
+    }
+
+    const validatedData = assignRoleSchema.parse(req.body);
+
+    // Prevent non-super-admins from assigning super_admin role
+    if (validatedData.role === UserRole.SUPER_ADMIN && currentUserRole !== UserRole.SUPER_ADMIN) {
+      return next(new ValidationError('Only super admins can assign super admin role'));
+    }
+
+    const user = await AuthService.assignUserRole(
+      validatedData.userId,
+      validatedData.role,
+      currentUserId
+    );
+
+    ResponseFormatter.success(
+      res,
+      {
+        id: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        updatedAt: user.updatedAt,
+      },
+      'Role assigned successfully',
+      `User role updated to ${validatedData.role}`
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(new ValidationError(error.errors[0].message));
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get user by ID with role information
+ * Accessible by admins and the user themselves
+ */
+export const getUserRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currentUserId = (req as any).user?.userId;
+    const currentUserRole = (req as any).user?.role;
+    const { userId } = req.params;
+
+    if (!currentUserId) {
+      return next(new ValidationError('User not authenticated'));
+    }
+
+    // Validate that userId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return next(
+        new ValidationError(
+          'Invalid user ID format. Must be a valid UUID. Use /api/auth/users/email/:email/role to search by email.'
+        )
+      );
+    }
+
+    // Users can view their own role, admins can view any role
+    const canViewRole =
+      userId === currentUserId ||
+      [UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF].includes(
+        currentUserRole
+      );
+
+    if (!canViewRole) {
+      return next(new ValidationError('Insufficient permissions to view this user role'));
+    }
+
+    try {
+      const user = await AuthService.getUserWithRole(userId);
+
+      ResponseFormatter.success(
+        res,
+        {
+          id: user.id,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          phoneVerified: user.phoneVerified,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        'User role retrieved successfully'
+      );
+    } catch (error: any) {
+      // Handle NotFoundError - return HTTP 200 with responseCode 404
+      if (error.name === 'NotFoundError' || error.message?.includes('not found')) {
+        ResponseFormatter.success(
+          res,
+          null,
+          'User not found',
+          `No user found with ID: ${userId}`,
+          200, // HTTP status
+          404 // responseCode in body
+        );
+        return;
+      }
+      // Re-throw other errors
+      throw error;
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get user by email with role information
+ * Accessible by admins only
+ */
+export const getUserRoleByEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currentUserRole = (req as any).user?.role;
+    const { email } = req.params;
+
+    // Only admins can search users by email
+    if (
+      ![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF].includes(
+        currentUserRole
+      )
+    ) {
+      return next(new ValidationError('Insufficient permissions to search users by email'));
+    }
+
+    try {
+      const user = await AuthService.getUserByEmailWithRole(email);
+
+      ResponseFormatter.success(
+        res,
+        {
+          id: user.id,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          phoneVerified: user.phoneVerified,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        'User role retrieved successfully'
+      );
+    } catch (error: any) {
+      // Handle NotFoundError - return HTTP 200 with responseCode 404
+      if (error.name === 'NotFoundError' || error.message?.includes('not found')) {
+        ResponseFormatter.success(
+          res,
+          null,
+          'User not found',
+          `No user found with email: ${email}`,
+          200, // HTTP status
+          404 // responseCode in body
+        );
+        return;
+      }
+      // Re-throw other errors
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

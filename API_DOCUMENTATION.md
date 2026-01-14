@@ -16,6 +16,16 @@ The documentation is now split into the following modules:
 - [Global Search](./docs/api/08-search.md)
 - [Health Check](./docs/api/09-health.md)
 - [Common Information](./docs/api/10-common.md)
+- [Role Management](./docs/api/11-roles.md)
+- [User Module Management](./docs/api/12-user-modules.md)
+- [Payroll Service](./docs/api/13-payroll.md)
+- [Attendance Management](./docs/api/14-attendance.md)
+- [Leave Management](./docs/api/15-leaves.md)
+- [Employee Documents](./docs/api/16-employee-documents.md)
+- [Employee Details](./docs/api/17-employee-details.md)
+- [S3 Usage & Free Tier](./docs/api/18-s3-usage.md)
+- [Notification Management](./docs/api/19-notifications.md)
+- [User Role Assignment](./docs/api/20-user-role-assignment.md)
 
 ---
 
@@ -69,6 +79,7 @@ Base Path: `/api/auth`
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -79,6 +90,7 @@ Base Path: `/api/auth`
 ```
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -100,6 +112,7 @@ Base Path: `/api/auth`
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/signup \
   -H "Content-Type: application/json" \
@@ -121,6 +134,7 @@ curl -X POST http://localhost:9400/api/auth/signup \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -140,6 +154,7 @@ curl -X POST http://localhost:9400/api/auth/signup \
 **Note:** All device fields are optional. If provided, the device will be automatically registered.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -167,6 +182,7 @@ curl -X POST http://localhost:9400/api/auth/signup \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/login \
   -H "Content-Type: application/json" \
@@ -189,9 +205,11 @@ curl -X POST http://localhost:9400/api/auth/login \
 **Authentication:** Not required
 
 **Query Parameters:**
+
 - `token` (string, required) - Email verification token
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -208,6 +226,7 @@ curl -X POST http://localhost:9400/api/auth/login \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_token"
 ```
@@ -222,6 +241,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -229,6 +249,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -241,6 +262,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/resend-verification \
   -H "Content-Type: application/json" \
@@ -259,6 +281,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -266,6 +289,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -278,6 +302,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/forgot-password \
   -H "Content-Type: application/json" \
@@ -296,6 +321,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "token": "reset_token",
@@ -304,6 +330,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -319,6 +346,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/reset-password \
   -H "Content-Type: application/json" \
@@ -338,6 +366,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "refreshToken": "refresh_token"
@@ -345,6 +374,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -360,6 +390,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/refresh-token \
   -H "Content-Type: application/json" \
@@ -378,6 +409,7 @@ curl -X POST http://localhost:9400/api/auth/refresh-token \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -398,6 +430,7 @@ curl -X POST http://localhost:9400/api/auth/refresh-token \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/auth/me \
   -H "Authorization: Bearer <access_token>"
@@ -413,6 +446,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "currentPassword": "OldPass123!",
@@ -421,6 +455,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -433,6 +468,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/change-password \
   -H "Authorization: Bearer <access_token>" \
@@ -455,6 +491,7 @@ curl -X POST http://localhost:9400/api/auth/change-password \
 Returns a dynamic menu structure based on the authenticated user's role. Each menu item includes navigation paths and icons suitable for frontend rendering.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -468,7 +505,16 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Dashboard",
       "path": "/dashboard",
       "icon": "home",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "companies",
@@ -503,20 +549,44 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Departments",
       "path": "/dashboard/departments",
       "icon": "sitemap",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager"
+      ]
     },
     {
       "id": "approvals",
       "label": "Approvals",
       "path": "/dashboard/approvals",
       "icon": "check-circle",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"],
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager"
+      ],
       "children": [
         {
           "id": "approvals-pending",
           "label": "Pending Approvals",
           "path": "/dashboard/approvals/pending",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager"
+          ]
         },
         {
           "id": "approvals-all",
@@ -531,19 +601,46 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Leave",
       "path": "/dashboard/leave",
       "icon": "calendar",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"],
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ],
       "children": [
         {
           "id": "leave-requests",
           "label": "My Leave Requests",
           "path": "/dashboard/leave/requests",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager",
+            "employee"
+          ]
         },
         {
           "id": "leave-create",
           "label": "Request Leave",
           "path": "/dashboard/leave/create",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager",
+            "employee"
+          ]
         }
       ]
     },
@@ -552,14 +649,32 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Attendance",
       "path": "/dashboard/attendance",
       "icon": "clock",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "profile",
       "label": "Profile",
       "path": "/dashboard/profile",
       "icon": "user",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "settings",
@@ -587,12 +702,14 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/auth/menu \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Menu Structure:**
+
 - Each menu item includes:
   - `id`: Unique identifier for the menu item
   - `label`: Display text for the menu item
@@ -605,6 +722,7 @@ curl -X GET http://localhost:9400/api/auth/menu \
 The API automatically filters menu items based on the authenticated user's role. Only menu items that the user's role has access to are returned.
 
 **Available Menu Items by Role:**
+
 - **Super Admin / Provider Admin / Provider HR Staff**: All menu items including Companies, Employees, Departments, Approvals, Leave, Attendance, Profile, Settings
 - **HRBP / Company Admin**: Employees, Departments, Approvals, Leave, Attendance, Profile, Settings (no Companies)
 - **Department Head / Manager**: Departments, Approvals, Leave, Attendance, Profile (no Companies, Employees, Settings)
@@ -626,6 +744,7 @@ All device endpoints require authentication.
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "deviceId": "unique-device-id-12345",
@@ -641,6 +760,7 @@ All device endpoints require authentication.
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -669,6 +789,7 @@ All device endpoints require authentication.
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/devices/register \
   -H "Authorization: Bearer <access_token>" \
@@ -691,6 +812,7 @@ curl -X POST http://localhost:9400/api/devices/register \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -722,6 +844,7 @@ curl -X POST http://localhost:9400/api/devices/register \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/devices \
   -H "Authorization: Bearer <access_token>"
@@ -737,6 +860,7 @@ curl -X GET http://localhost:9400/api/devices \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -761,6 +885,7 @@ curl -X GET http://localhost:9400/api/devices \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/devices/device-uuid \
   -H "Authorization: Bearer <access_token>"
@@ -776,6 +901,7 @@ curl -X GET http://localhost:9400/api/devices/device-uuid \
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "fcmToken": "updated-firebase-token",
@@ -787,6 +913,7 @@ curl -X GET http://localhost:9400/api/devices/device-uuid \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -806,6 +933,7 @@ curl -X GET http://localhost:9400/api/devices/device-uuid \
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/devices/device-uuid \
   -H "Authorization: Bearer <access_token>" \
@@ -826,6 +954,7 @@ curl -X PUT http://localhost:9400/api/devices/device-uuid \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -838,6 +967,7 @@ curl -X PUT http://localhost:9400/api/devices/device-uuid \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/devices/device-uuid/deactivate \
   -H "Authorization: Bearer <access_token>"
@@ -853,6 +983,7 @@ curl -X POST http://localhost:9400/api/devices/device-uuid/deactivate \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -865,6 +996,7 @@ curl -X POST http://localhost:9400/api/devices/device-uuid/deactivate \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/devices/device-uuid \
   -H "Authorization: Bearer <access_token>"
@@ -886,6 +1018,7 @@ All approval endpoints require authentication and employee context.
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "requestType": "leave",
@@ -914,6 +1047,7 @@ All approval endpoints require authentication and employee context.
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -945,6 +1079,7 @@ All approval endpoints require authentication and employee context.
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/approvals \
   -H "Authorization: Bearer <access_token>" \
@@ -970,10 +1105,12 @@ curl -X POST http://localhost:9400/api/approvals \
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Can only view approval requests from their own company
 - **Super Admins:** Can view any approval request across all companies (no company restriction)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1018,6 +1155,7 @@ curl -X POST http://localhost:9400/api/approvals \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
   -H "Authorization: Bearer <access_token>"
@@ -1033,10 +1171,12 @@ curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Can only view approval requests from their own company
 - **Super Admins:** Can view all approval requests across all companies (no company restriction)
 
 **Query Parameters:**
+
 - `page` (number, optional) - Page number (default: 1)
 - `limit` (number, optional) - Items per page (default: 10)
 - `requestType` (string, optional) - Filter by request type (leave, employee_create, etc.)
@@ -1045,6 +1185,7 @@ curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
 - `requestedFor` (string, optional) - Filter by target employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1066,6 +1207,7 @@ curl -X GET http://localhost:9400/api/approvals/approval-request-uuid \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/approvals?page=1&limit=10&status=pending" \
   -H "Authorization: Bearer <access_token>"
@@ -1081,12 +1223,14 @@ curl -X GET "http://localhost:9400/api/approvals?page=1&limit=10&status=pending"
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Returns approval requests pending action from the current user (where they are assigned as approver)
 - **Super Admins:** Returns all pending approval requests across all companies (no employee context required)
 
 Returns all approval requests pending action from the current user.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1108,6 +1252,7 @@ Returns all approval requests pending action from the current user.
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/approvals/pending \
   -H "Authorization: Bearer <access_token>"
@@ -1123,10 +1268,12 @@ curl -X GET http://localhost:9400/api/approvals/pending \
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Can only approve requests where they are assigned as the approver for the current step
 - **Super Admins:** Can approve any pending approval request, even if not assigned as approver (bypasses authorization check)
 
 **Request Body:**
+
 ```json
 {
   "comments": "Approved. Enjoy your vacation!"
@@ -1134,6 +1281,7 @@ curl -X GET http://localhost:9400/api/approvals/pending \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1151,6 +1299,7 @@ curl -X GET http://localhost:9400/api/approvals/pending \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
   -H "Authorization: Bearer <access_token>" \
@@ -1170,10 +1319,12 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Can only reject requests where they are assigned as the approver for the current step
 - **Super Admins:** Can reject any pending approval request, even if not assigned as approver (bypasses authorization check)
 
 **Request Body:**
+
 ```json
 {
   "rejectionReason": "Insufficient leave balance",
@@ -1182,6 +1333,7 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1199,6 +1351,7 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/approve \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
   -H "Authorization: Bearer <access_token>" \
@@ -1219,10 +1372,12 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Can only cancel requests they created (must be the requester)
 - **Super Admins:** Can cancel any pending approval request, regardless of who created it (bypasses requester restriction)
 
 **Request Body:**
+
 ```json
 {
   "reason": "No longer needed"
@@ -1230,6 +1385,7 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1245,6 +1401,7 @@ curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/reject \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/approvals/approval-request-uuid/cancel \
   -H "Authorization: Bearer <access_token>" \
@@ -1271,10 +1428,12 @@ All company endpoints require authentication.
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Notes:**
+
 - Returns all companies regardless of status (both active and inactive)
 - Results are sorted alphabetically by company name
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1321,6 +1480,7 @@ All company endpoints require authentication.
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/companies \
   -H "Authorization: Bearer <access_token>"
@@ -1338,9 +1498,11 @@ curl -X GET http://localhost:9400/api/companies \
 **Access Control:** Company-scoped users can only access their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Company UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1363,12 +1525,14 @@ curl -X GET http://localhost:9400/api/companies \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/companies/{company_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (company not found)
 - `403` - Forbidden (insufficient permissions or cannot access different company)
 
@@ -1383,6 +1547,7 @@ curl -X GET http://localhost:9400/api/companies/{company_id} \
 **Required Roles:** `super_admin`, `provider_admin`
 
 **Request Body:**
+
 ```json
 {
   "name": "Acme Corporation",
@@ -1393,14 +1558,17 @@ curl -X GET http://localhost:9400/api/companies/{company_id} \
 ```
 
 **Required Fields:**
+
 - `name` (string, required) - Company name
 - `code` (string, required) - Unique company code (must be unique across all companies)
 
 **Optional Fields:**
+
 - `description` (string, optional) - Company description
 - `hrbpId` (string, optional) - UUID of the HR Business Partner assigned to the company
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -1423,6 +1591,7 @@ curl -X GET http://localhost:9400/api/companies/{company_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/companies \
   -H "Authorization: Bearer <access_token>" \
@@ -1435,6 +1604,7 @@ curl -X POST http://localhost:9400/api/companies \
 ```
 
 **Error Responses:**
+
 - `400` - Bad Request (missing required fields: name or code)
 - `409` - Conflict (company code already exists)
 - `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
@@ -1450,9 +1620,11 @@ curl -X POST http://localhost:9400/api/companies \
 **Required Roles:** `super_admin`, `provider_admin`
 
 **Path Parameters:**
+
 - `id` (string, required) - Company UUID
 
 **Request Body:**
+
 ```json
 {
   "name": "Acme Corporation Updated",
@@ -1464,6 +1636,7 @@ curl -X POST http://localhost:9400/api/companies \
 ```
 
 **All Fields are Optional:**
+
 - `name` (string, optional) - Company name
 - `code` (string, optional) - Unique company code (must be unique if provided)
 - `description` (string, optional) - Company description
@@ -1471,6 +1644,7 @@ curl -X POST http://localhost:9400/api/companies \
 - `status` (string, optional) - Company status (`active` or `inactive`)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1493,6 +1667,7 @@ curl -X POST http://localhost:9400/api/companies \
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/companies/{company_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -1504,6 +1679,7 @@ curl -X PUT http://localhost:9400/api/companies/{company_id} \
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (company not found)
 - `409` - Conflict (company code already exists if code is changed)
 - `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
@@ -1519,11 +1695,13 @@ curl -X PUT http://localhost:9400/api/companies/{company_id} \
 **Required Roles:** `super_admin`, `provider_admin`
 
 **Path Parameters:**
+
 - `id` (string, required) - Company UUID
 
 **Note:** This performs a soft delete by setting the company status to `inactive`. The company record remains in the database.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1536,12 +1714,14 @@ curl -X PUT http://localhost:9400/api/companies/{company_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/companies/{company_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (company not found)
 - `403` - Forbidden (insufficient permissions - not super_admin or provider_admin)
 
@@ -1556,13 +1736,16 @@ curl -X DELETE http://localhost:9400/api/companies/{company_id} \
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Path Parameters:**
+
 - `companyId` (string, required) - Company UUID
 
 **Request:**
+
 - Content-Type: `multipart/form-data`
 - Body: Form data with `image` file field
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1579,6 +1762,7 @@ curl -X DELETE http://localhost:9400/api/companies/{company_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/companies/{company_id}/upload-profile-image \
   -H "Authorization: Bearer <access_token>" \
@@ -1604,9 +1788,11 @@ All department endpoints require authentication. Departments are company-scoped 
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Filter departments by company ID. If not provided and user is company-scoped, automatically filters by user's company.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1638,6 +1824,7 @@ All department endpoints require authentication. Departments are company-scoped 
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
   -H "Authorization: Bearer <access_token>"
@@ -1655,9 +1842,11 @@ curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
 **Access Control:** Company-scoped users can only access departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1678,12 +1867,14 @@ curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `403` - Forbidden (insufficient permissions or cannot access different company)
 
@@ -1698,6 +1889,7 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Request Body:**
+
 ```json
 {
   "companyId": "company-uuid",
@@ -1708,14 +1900,17 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 ```
 
 **Required Fields:**
+
 - `companyId` (string, required) - Company UUID that the department belongs to
 - `name` (string, required) - Department name (must be unique within the company)
 
 **Optional Fields:**
+
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -1736,6 +1931,7 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/departments \
   -H "Authorization: Bearer <access_token>" \
@@ -1748,6 +1944,7 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **Error Responses:**
+
 - `400` - Bad Request (missing required fields: companyId or name)
 - `409` - Conflict (department name already exists in this company)
 - `403` - Forbidden (insufficient permissions or cannot create department in different company)
@@ -1764,9 +1961,11 @@ curl -X POST http://localhost:9400/api/departments \
 **Access Control:** Company-scoped users can only update departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Request Body:**
+
 ```json
 {
   "name": "Engineering Updated",
@@ -1776,11 +1975,13 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **All Fields are Optional:**
+
 - `name` (string, optional) - Department name (must be unique within the company if changed)
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1801,6 +2002,7 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -1812,6 +2014,7 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `409` - Conflict (department name already exists in this company if name is changed)
 - `403` - Forbidden (insufficient permissions or cannot update different company)
@@ -1828,9 +2031,11 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 **Access Control:** Company-scoped users can only delete departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -1843,12 +2048,14 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `403` - Forbidden (insufficient permissions or cannot delete different company)
 
@@ -1870,10 +2077,12 @@ All employee endpoints require authentication.
 **Authentication:** Required
 
 **Access Control:**
+
 - **Regular Users:** Returns the employee record associated with the authenticated user. Returns 404 if no employee record exists.
 - **Super Admins / Provider Admins / Provider HR Staff:** If no employee record exists, returns user information indicating they are a Super Admin without an employee record (instead of 404).
 
 **Response (200) - With Employee Record:**
+
 ```json
 {
   "header": {
@@ -1894,7 +2103,7 @@ All employee endpoints require authentication.
     "department": "Engineering",
     "managerId": "manager_uuid",
     "hireDate": "2024-01-01",
-    "salary": 75000.00,
+    "salary": 75000.0,
     "status": "active",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -1903,6 +2112,7 @@ All employee endpoints require authentication.
 ```
 
 **Response (200) - Super Admin Without Employee Record:**
+
 ```json
 {
   "header": {
@@ -1922,6 +2132,7 @@ All employee endpoints require authentication.
 ```
 
 **Response (404) - Regular User Without Employee Record:**
+
 ```json
 {
   "header": {
@@ -1934,12 +2145,14 @@ All employee endpoints require authentication.
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Super Admins, Provider Admins, and Provider HR Staff can access this endpoint even without an employee record
 - The response for Super Admins without employee records includes `isSuperAdmin: true` and `hasEmployeeRecord: false` to help frontend applications adjust the UI accordingly
 - Regular users (employees, managers, etc.) will receive a 404 error if they don't have an employee record
@@ -1955,6 +2168,7 @@ curl -X GET http://localhost:9400/api/employees/me \
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Request Body:**
+
 ```json
 {
   "userId": "user_uuid",
@@ -1970,11 +2184,12 @@ curl -X GET http://localhost:9400/api/employees/me \
   "department": "Engineering",
   "managerId": "manager_uuid",
   "hireDate": "2024-01-15",
-  "salary": 90000.00
+  "salary": 90000.0
 }
 ```
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -2000,6 +2215,7 @@ curl -X GET http://localhost:9400/api/employees/me \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/employees \
   -H "Authorization: Bearer <access_token>" \
@@ -2028,9 +2244,11 @@ curl -X POST http://localhost:9400/api/employees \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2061,6 +2279,7 @@ curl -X POST http://localhost:9400/api/employees \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>"
@@ -2078,19 +2297,22 @@ curl -X GET http://localhost:9400/api/employees/{employee_id} \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Request Body:**
+
 ```json
 {
   "firstName": "John Updated",
   "phoneNumber": "+1234567899",
   "jobTitle": "Senior Software Engineer",
-  "salary": 85000.00
+  "salary": 85000.0
 }
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2103,13 +2325,14 @@ curl -X GET http://localhost:9400/api/employees/{employee_id} \
     "firstName": "John Updated",
     "phoneNumber": "+1234567899",
     "jobTitle": "Senior Software Engineer",
-    "salary": 85000.00,
+    "salary": 85000.0,
     "updatedAt": "2024-01-15T10:00:00.000Z"
   }
 }
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -2132,9 +2355,11 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id} \
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2147,6 +2372,7 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
   -H "Authorization: Bearer <access_token>"
@@ -2162,6 +2388,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `page` (number, optional) - Page number (default: 1)
 - `limit` (number, optional) - Items per page (default: 20)
 - `searchTerm` (string, optional) - Search in name, email, employeeId
@@ -2171,6 +2398,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 - `companyId` (string, optional) - Filter by company (for provider roles)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2194,6 +2422,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTerm=john&department=Engineering" \
   -H "Authorization: Bearer <access_token>"
@@ -2209,10 +2438,12 @@ curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTe
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `rootId` (string, optional) - Root employee ID (default: top-level employees)
 - `companyId` (string, optional) - Filter by company
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2232,6 +2463,7 @@ curl -X GET "http://localhost:9400/api/employees/search?page=1&limit=20&searchTe
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_id" \
   -H "Authorization: Bearer <access_token>"
@@ -2247,9 +2479,11 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `managerId` (string, required) - Manager employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2271,6 +2505,7 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-reports \
   -H "Authorization: Bearer <access_token>"
@@ -2286,9 +2521,11 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `managerId` (string, required) - Manager employee UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2312,6 +2549,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinates \
   -H "Authorization: Bearer <access_token>"
@@ -2329,9 +2567,11 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 **Access Control:** Based on role and hierarchy
 
 **Path Parameters:**
+
 - `id` (string, required) - Employee UUID
 
 **Request Body:**
+
 ```json
 {
   "newManagerId": "new_manager_uuid"
@@ -2339,6 +2579,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2355,6 +2596,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/subordinate
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
   -H "Authorization: Bearer <access_token>" \
@@ -2376,6 +2618,7 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
 **Authentication:** Not required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2395,6 +2638,7 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/health
 ```
@@ -2415,10 +2659,12 @@ The global search endpoint allows users to search across multiple entities (empl
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `q` or `searchTerm` (string, required) - Search term (minimum 2 characters)
 - `limit` (number, optional) - Maximum number of results to return (default: 20, max: 50)
 
 **Access Control:**
+
 - **Employees**: Searchable by Super Admin, Provider Admin, Provider HR Staff, HRBP, Company Admin, Department Head, Manager
   - Non-super-admin users only see employees from their company
 - **Companies**: Searchable by Super Admin, Provider Admin, Provider HR Staff only
@@ -2427,6 +2673,7 @@ The global search endpoint allows users to search across multiple entities (empl
 - **Menus**: Searchable by all authenticated users (role-based menu filtering applies)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -2495,6 +2742,7 @@ The global search endpoint allows users to search across multiple entities (empl
 ```
 
 **Response (400) - Invalid Search Term:**
+
 ```json
 {
   "header": {
@@ -2507,12 +2755,14 @@ The global search endpoint allows users to search across multiple entities (empl
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/search?q=john&limit=20" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Search Features:**
+
 - **Multi-entity search**: Searches across employees, companies, departments, and menus simultaneously
 - **Role-based filtering**: Only returns results the user is authorized to see
 - **Company isolation**: Non-super-admin users only see results from their company
@@ -2522,12 +2772,14 @@ curl -X GET "http://localhost:9400/api/search?q=john&limit=20" \
 - **Partial matching**: Matches partial strings in names, emails, IDs, job titles, etc.
 
 **Search Fields:**
+
 - **Employees**: firstName, lastName, email, employeeId, jobTitle, department
 - **Companies**: name, code, description
 - **Departments**: name, description
 - **Menus**: label, path
 
 **Notes:**
+
 - Search term must be at least 2 characters long
 - Maximum limit is 50 results
 - Results are automatically filtered based on user role and company access
@@ -2629,6 +2881,7 @@ All API requests are automatically logged to the `RequestLogs` table. Each log e
 ### Logged Information
 
 - **Request**:
+
   - HTTP method (GET, POST, PUT, DELETE, etc.)
   - Full URL and path
   - Query parameters
@@ -2636,11 +2889,13 @@ All API requests are automatically logged to the `RequestLogs` table. Each log e
   - Request body (sensitive data redacted)
 
 - **Response**:
+
   - HTTP status code
   - Response body
   - Response headers
 
 - **User Context**:
+
   - User ID (if authenticated)
   - Employee ID (if available)
   - Company ID (if available)
@@ -2655,6 +2910,7 @@ All API requests are automatically logged to the `RequestLogs` table. Each log e
 ### Data Sanitization
 
 The following fields are automatically redacted in logs:
+
 - Authorization headers
 - Cookie headers
 - X-API-Key headers
@@ -2677,4 +2933,3 @@ SELECT * FROM "RequestLogs" WHERE "serviceName" = 'auth-service' ORDER BY "creat
 -- Get slow requests (> 1 second)
 SELECT * FROM "RequestLogs" WHERE "duration" > 1000 ORDER BY "duration" DESC;
 ```
-

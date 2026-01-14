@@ -1,5 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, ResponseFormatter, ValidationError, UserRole, NotFoundError } from '@hrm/common';
+import {
+  AuthRequest,
+  ResponseFormatter,
+  ValidationError,
+  UserRole,
+  NotFoundError,
+} from '@hrm/common';
 import { DocumentService } from '../services/document.service';
 import { EmployeeQueries } from '../queries/employee.queries';
 import { z } from 'zod';
@@ -26,13 +32,21 @@ const uploadDocumentSchema = z.object({
     'other',
   ]),
   documentName: z.string().min(1, 'Document name is required'),
-  expiryDate: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  expiryDate: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
   notes: z.string().optional(),
 });
 
 const updateDocumentSchema = z.object({
   documentName: z.string().min(1).optional(),
-  expiryDate: z.string().or(z.date()).optional().transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
+  expiryDate: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? (typeof val === 'string' ? new Date(val) : val) : undefined)),
   notes: z.string().optional(),
 });
 
@@ -41,7 +55,9 @@ const rejectDocumentSchema = z.object({
 });
 
 export const uploadDocument = async (
-  req: AuthRequest & { file?: { buffer: Buffer; originalname: string; mimetype: string; size: number } },
+  req: AuthRequest & {
+    file?: { buffer: Buffer; originalname: string; mimetype: string; size: number };
+  },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -141,7 +157,17 @@ export const verifyDocument = async (
     const { id } = req.params;
     const companyId = req.query.companyId as string | undefined;
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.DEPARTMENT_HEAD, UserRole.MANAGER].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.MANAGER,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to verify documents'));
     }
 
@@ -167,7 +193,17 @@ export const rejectDocument = async (
     const { id } = req.params;
     const companyId = req.query.companyId as string | undefined;
     const userRole = req.user?.role as UserRole;
-    if (![UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN, UserRole.PROVIDER_HR_STAFF, UserRole.HRBP, UserRole.COMPANY_ADMIN, UserRole.DEPARTMENT_HEAD, UserRole.MANAGER].includes(userRole)) {
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.HRBP,
+        UserRole.COMPANY_ADMIN,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.MANAGER,
+      ].includes(userRole)
+    ) {
       return next(new ValidationError('Insufficient permissions to reject documents'));
     }
 
@@ -204,22 +240,31 @@ export const getDocumentsByEmployee = async (
     const documentType = req.query.documentType as DocumentType | undefined;
     const status = req.query.status as DocumentStatus | undefined;
 
-    // Check if the employeeId parameter is actually a userId
-    // First try to find by employee ID, then by userId
+    // Check if the employeeId parameter is actually a userEmail
+    // First try to find by employee ID, then by userEmail
     let actualEmployeeId = employeeId;
     let employee = await EmployeeQueries.findById(employeeId, companyId);
-    
+
     if (!employee) {
-      // Try to find by userId
-      employee = await EmployeeQueries.findByUserId(employeeId);
-      if (employee) {
-        actualEmployeeId = employee.id;
-      } else {
+      // Try to find by userEmail (check if it's an email format)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(employeeId)) {
+        employee = await EmployeeQueries.findByUserEmail(employeeId);
+        if (employee) {
+          actualEmployeeId = employee.id;
+        }
+      }
+
+      if (!employee) {
         // Employee not found - check if it's the current user requesting their own data
         // Users without employee records don't have documents, so return empty array
-        const currentUserId = req.user?.uid || req.user?.userId;
-        if (currentUserId && currentUserId === employeeId) {
-          ResponseFormatter.success(res, [], 'Documents retrieved successfully (no employee record)');
+        const currentUserEmail = req.user?.email;
+        if (currentUserEmail && currentUserEmail === employeeId) {
+          ResponseFormatter.success(
+            res,
+            [],
+            'Documents retrieved successfully (no employee record)'
+          );
           return;
         }
         // For other users, return 404
@@ -241,8 +286,8 @@ export const getDocumentsByEmployee = async (
     // Handle NotFoundError - if user is requesting their own data, return empty array
     if (error instanceof NotFoundError && error.message?.includes('Employee')) {
       const { employeeId } = req.params;
-      const currentUserId = req.user?.uid || req.user?.userId;
-      if (currentUserId && currentUserId === employeeId) {
+      const currentUserEmail = req.user?.email;
+      if (currentUserEmail && currentUserEmail === employeeId) {
         // User is requesting their own data but has no employee record
         ResponseFormatter.success(res, [], 'Documents retrieved successfully (no employee record)');
         return;
@@ -319,4 +364,3 @@ export const searchDocuments = async (
     next(error);
   }
 };
-

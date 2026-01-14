@@ -23,7 +23,7 @@ export class EmployeeQueries {
         {
           model: Employee,
           as: 'manager',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Company,
@@ -41,7 +41,7 @@ export class EmployeeQueries {
         {
           model: Employee,
           as: 'manager',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Company,
@@ -52,14 +52,14 @@ export class EmployeeQueries {
     });
   }
 
-  static async findByUserId(userId: string): Promise<Employee | null> {
+  static async findByUserEmail(userEmail: string): Promise<Employee | null> {
     return await Employee.findOne({
-      where: { userId },
+      where: { userEmail },
       include: [
         {
           model: Employee,
           as: 'manager',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
     });
@@ -77,7 +77,7 @@ export class EmployeeQueries {
         {
           model: Employee,
           as: 'subordinates',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
     });
@@ -102,11 +102,11 @@ export class EmployeeQueries {
       SELECT * FROM subordinates;
     `;
 
-    return await sequelize.query(query, {
+    return (await sequelize.query(query, {
       replacements: companyId ? { managerId, companyId } : { managerId },
       type: QueryTypes.SELECT,
       model: Employee,
-    }) as Employee[];
+    })) as Employee[];
   }
 
   static async getHierarchyTree(rootId?: string): Promise<HierarchyNode[]> {
@@ -158,10 +158,10 @@ export class EmployeeQueries {
         SELECT * FROM hierarchy;
       `;
 
-    return await sequelize.query(query, {
+    return (await sequelize.query(query, {
       replacements: rootId ? { rootId } : {},
       type: QueryTypes.SELECT,
-    }) as HierarchyNode[];
+    })) as HierarchyNode[];
   }
 
   static async checkCycle(employeeId: string, newManagerId: string): Promise<boolean> {
@@ -236,7 +236,7 @@ export class EmployeeQueries {
         {
           model: Employee,
           as: 'manager',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Company,
@@ -253,7 +253,10 @@ export class EmployeeQueries {
     };
   }
 
-  static async getEmployeesByDepartment(department: string, companyId?: string): Promise<Employee[]> {
+  static async getEmployeesByDepartment(
+    department: string,
+    companyId?: string
+  ): Promise<Employee[]> {
     const where: any = { department, status: 'active' };
     if (companyId) {
       where.companyId = companyId;
@@ -265,7 +268,7 @@ export class EmployeeQueries {
         {
           model: Employee,
           as: 'manager',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Company,
@@ -276,14 +279,7 @@ export class EmployeeQueries {
     });
   }
 
-  static async updateManager(
-    employeeId: string,
-    newManagerId: string | null
-  ): Promise<void> {
-    await Employee.update(
-      { managerId: newManagerId ?? undefined },
-      { where: { id: employeeId } }
-    );
+  static async updateManager(employeeId: string, newManagerId: string | null): Promise<void> {
+    await Employee.update({ managerId: newManagerId ?? undefined }, { where: { id: employeeId } });
   }
 }
-

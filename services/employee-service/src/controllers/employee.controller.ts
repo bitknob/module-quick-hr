@@ -1,6 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service';
-import { AccessControl, UserRole, ResponseFormatter, NotFoundError, ValidationError, logger } from '@hrm/common';
+import {
+  AccessControl,
+  UserRole,
+  ResponseFormatter,
+  NotFoundError,
+  ValidationError,
+  logger,
+} from '@hrm/common';
 import { EnrichedAuthRequest } from '../middleware/accessControl';
 import { DocumentService } from '../services/document.service';
 import { DocumentType, DocumentStatus } from '../models/EmployeeDocument.model';
@@ -41,19 +48,19 @@ export const getEmployee = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     // Validate that id is a valid UUID format - prevent route conflicts with special paths
     // Common non-UUID paths that shouldn't match this route
     const reservedPaths = ['documents', 'attendance', 'leaves', 'details', 'approvals'];
     if (reservedPaths.includes(id)) {
       return next(new NotFoundError('Endpoint'));
     }
-    
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!id || id === 'undefined' || !uuidRegex.test(id)) {
       return next(new NotFoundError('Employee'));
     }
-    
+
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
@@ -70,7 +77,7 @@ export const getCurrentEmployee = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  if (!req.user?.uid) {
+  if (!req.user?.email) {
     return ResponseFormatter.error(res, 'User not authenticated', '', 401);
   }
 
@@ -83,17 +90,16 @@ export const getCurrentEmployee = async (
 
   // Try to get employee record
   try {
-    const employee = await EmployeeService.getEmployeeByUserId(req.user.uid);
+    const employee = await EmployeeService.getEmployeeByUserEmail(req.user.email);
     ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
     return;
   } catch (error: any) {
     // Handle employee not found case - always return 200, never 404
     // Check for NotFoundError or any 404 error related to employee
-    const isEmployeeNotFound = (error instanceof NotFoundError || 
-                                error?.statusCode === 404) &&
-                               (error?.message?.includes('Employee') || 
-                                error?.message?.includes('not found'));
-    
+    const isEmployeeNotFound =
+      (error instanceof NotFoundError || error?.statusCode === 404) &&
+      (error?.message?.includes('Employee') || error?.message?.includes('not found'));
+
     if (isEmployeeNotFound) {
       // Prevent error from propagating - always return 200 status
       // Do NOT call next(error) - handle it here to avoid 404 status
@@ -104,7 +110,7 @@ export const getCurrentEmployee = async (
           res,
           {
             id: req.user.uid,
-            userId: req.user.uid,
+            userEmail: req.user.email,
             email: req.user.email,
             role: req.user.role,
             isSuperAdmin: true,
@@ -120,7 +126,7 @@ export const getCurrentEmployee = async (
           res,
           {
             id: req.user.uid,
-            userId: req.user.uid,
+            userEmail: req.user.email,
             email: req.user.email,
             role: req.user.role,
             hasEmployeeRecord: false,
@@ -132,7 +138,7 @@ export const getCurrentEmployee = async (
         return; // Important: return here to prevent error from propagating
       }
     }
-    
+
     // For other errors, pass to error handler
     next(error);
   }
@@ -221,9 +227,7 @@ export const getHierarchyTree = async (
       filterCompanyId = userCompanyId;
     }
 
-    const hierarchy = await EmployeeService.getHierarchyTree(
-      rootId as string | undefined
-    );
+    const hierarchy = await EmployeeService.getHierarchyTree(rootId as string | undefined);
     ResponseFormatter.success(res, hierarchy, 'Hierarchy tree retrieved successfully');
   } catch (error) {
     next(error);
@@ -325,7 +329,15 @@ export const getCurrentEmployeeDetails = async (
 ): Promise<void> => {
   try {
     if (!req.employee?.id) {
-      ResponseFormatter.error(res, 'Employee record not found', '', 404);
+      // Return HTTP 200 with 404 in response body to prevent UI error pages
+      ResponseFormatter.success(
+        res,
+        null,
+        'Employee record not found',
+        'Please create an employee profile to access this information.',
+        200,
+        404 // responseCode in body
+      );
       return;
     }
 
@@ -339,10 +351,17 @@ export const getCurrentEmployeeDetails = async (
     ResponseFormatter.success(res, detailData, 'Employee detail retrieved successfully');
   } catch (error: any) {
     if (error instanceof NotFoundError && error.message?.includes('Employee detail')) {
-      ResponseFormatter.error(res, 'Employee detail not found', '', 404);
+      // Return HTTP 200 with 404 in response body to prevent UI error pages
+      ResponseFormatter.success(
+        res,
+        null,
+        'Employee detail not found',
+        'No additional details have been added for this employee yet.',
+        200,
+        404 // responseCode in body
+      );
       return;
     }
     next(error);
   }
 };
-
