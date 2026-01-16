@@ -12,6 +12,7 @@ import {
   assignUserRole,
   getUserRole,
   getUserRoleByEmail,
+  createUserForEmployee,
 } from '../controllers/auth.controller';
 import { getMenu } from '../controllers/menu.controller';
 import { authenticate, authorize } from '../middleware/auth';
@@ -41,5 +42,17 @@ router.post(
 );
 router.get('/users/:userId/role', getUserRole);
 router.get('/users/email/:email/role', getUserRoleByEmail);
+
+// Create user account for employee
+router.post(
+  '/create-user-for-employee',
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.COMPANY_ADMIN
+  ),
+  createUserForEmployee
+);
 
 export default router;

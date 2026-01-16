@@ -91,6 +91,7 @@ export class AuthService {
       verificationToken,
       verificationTokenExpiry,
       isActive: true,
+      mustChangePassword: false,
     });
 
     // Send verification email asynchronously (non-blocking) if enabled
@@ -129,7 +130,7 @@ export class AuthService {
   ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     // Use raw SQL query to avoid Sequelize issues
     const [users] = (await sequelize.query(
-      'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
+      'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber", "mustChangePassword" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
       {
         replacements: { email: email.trim() },
         type: QueryTypes.SELECT,
@@ -182,6 +183,7 @@ export class AuthService {
         emailVerified: userData.emailVerified,
         phoneVerified: userData.phoneVerified,
         isActive: userData.isActive,
+        mustChangePassword: userData.mustChangePassword || false,
         password: '',
       } as User,
       accessToken,
@@ -289,19 +291,36 @@ export class AuthService {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    const user = await User.findByPk(userId);
-    if (!user) {
+    // Use raw query to get user data
+    const [userData] = (await sequelize.query(
+      'SELECT id, email, password FROM "Users" WHERE id = :userId LIMIT 1',
+      {
+        replacements: { userId },
+        type: QueryTypes.SELECT,
+      }
+    )) as any[];
+
+    if (!userData) {
       throw new NotFoundError('User not found');
     }
 
-    const isPasswordValid = await this.comparePassword(currentPassword, user.password);
+    const isPasswordValid = await this.comparePassword(currentPassword, userData.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Current password is incorrect');
     }
 
     const hashedPassword = await this.hashPassword(newPassword);
-    user.password = hashedPassword;
-    await user.save();
+
+    // Update password and clear mustChangePassword flag
+    await sequelize.query(
+      'UPDATE "Users" SET password = :password, "mustChangePassword" = false, "updatedAt" = NOW() WHERE id = :userId',
+      {
+        replacements: { password: hashedPassword, userId },
+        type: QueryTypes.UPDATE,
+      }
+    );
+
+    logger.info(`Password changed successfully for user ${userId}`);
   }
 
   static async getUserById(userId: string): Promise<User> {
@@ -398,8 +417,16 @@ export class AuthService {
    * @returns Updated user
    */
   static async assignUserRole(userId: string, role: UserRole, assignedBy: string): Promise<User> {
-    const user = await User.findByPk(userId);
-    if (!user) {
+    // Use raw query to avoid Sequelize serialization issues
+    const [userData] = (await sequelize.query(
+      'SELECT id, email, password, role, "emailVerified", "phoneVerified", "phoneNumber", "isActive" FROM "Users" WHERE id = :userId LIMIT 1',
+      {
+        replacements: { userId },
+        type: QueryTypes.SELECT,
+      }
+    )) as any[];
+
+    if (!userData) {
       throw new NotFoundError('User not found');
     }
 
@@ -408,13 +435,54 @@ export class AuthService {
       throw new ValidationError('Invalid role specified');
     }
 
-    const oldRole = user.role;
-    user.role = role;
-    await user.save();
+    const oldRole = userData.role;
+    const userEmail = userData.email;
 
-    logger.info(`Role changed for user ${userId} from ${oldRole} to ${role} by ${assignedBy}`);
+    // Use a transaction to ensure both tables are updated atomically
+    const transaction = await sequelize.transaction();
 
-    return user;
+    try {
+      // Update the Users table
+      await sequelize.query(
+        'UPDATE "Users" SET role = :role, "updatedAt" = NOW() WHERE id = :userId',
+        {
+          replacements: { role, userId },
+          type: QueryTypes.UPDATE,
+          transaction,
+        }
+      );
+
+      // Update the Employees table (if an employee record exists for this user)
+      // The employee record is linked by email (Users.email = Employees.userEmail)
+      await sequelize.query(
+        'UPDATE "Employees" SET role = :role, "updatedAt" = NOW() WHERE LOWER("userEmail") = LOWER(:userEmail)',
+        {
+          replacements: { role, userEmail },
+          type: QueryTypes.UPDATE,
+          transaction,
+        }
+      );
+
+      await transaction.commit();
+
+      logger.info(`Role changed for user ${userId} from ${oldRole} to ${role} by ${assignedBy}`);
+      logger.info(`Updated role in both Users and Employees tables for email: ${userEmail}`);
+    } catch (error) {
+      await transaction.rollback();
+      logger.error(`Failed to assign role for user ${userId}:`, error);
+      throw error;
+    }
+
+    // Fetch the updated user data
+    const [updatedUser] = (await sequelize.query(
+      'SELECT id, email, "phoneNumber", role, "emailVerified", "phoneVerified", "updatedAt" FROM "Users" WHERE id = :userId LIMIT 1',
+      {
+        replacements: { userId },
+        type: QueryTypes.SELECT,
+      }
+    )) as any[];
+
+    return updatedUser as User;
   }
 
   /**
@@ -446,12 +514,16 @@ export class AuthService {
 
   /**
    * Get user by email with role information
-   * @param email - User email
+   * Searches by User email, Employee userEmail, or Employee userCompEmail
+   * @param email - Email to search for (can be user email, employee personal email, or company email)
    * @returns User with role information
    */
   static async getUserByEmailWithRole(email: string): Promise<User> {
-    const user = await User.findOne({
-      where: { email: email.toLowerCase().trim() },
+    const searchEmail = email.toLowerCase().trim();
+
+    // First, try to find user directly by their email
+    let user = await User.findOne({
+      where: { email: searchEmail },
       attributes: [
         'id',
         'email',
@@ -465,10 +537,127 @@ export class AuthService {
       ],
     });
 
+    // If not found, search in Employees table by userEmail or userCompEmail
+    if (!user) {
+      const [employeeResult] = (await sequelize.query(
+        `SELECT u.id, u.email, u."phoneNumber", u.role, u."emailVerified", u."phoneVerified", u."isActive", u."createdAt", u."updatedAt"
+         FROM "Users" u
+         INNER JOIN "Employees" e ON LOWER(u.email) = LOWER(e."userEmail")
+         WHERE LOWER(e."userEmail") = LOWER(:email) OR LOWER(e."userCompEmail") = LOWER(:email)
+         LIMIT 1`,
+        {
+          replacements: { email: searchEmail },
+          type: QueryTypes.SELECT,
+        }
+      )) as any[];
+
+      if (employeeResult) {
+        // Convert the raw query result to a User-like object
+        user = {
+          id: employeeResult.id,
+          email: employeeResult.email,
+          phoneNumber: employeeResult.phoneNumber,
+          role: employeeResult.role,
+          emailVerified: employeeResult.emailVerified,
+          phoneVerified: employeeResult.phoneVerified,
+          isActive: employeeResult.isActive,
+          createdAt: employeeResult.createdAt,
+          updatedAt: employeeResult.updatedAt,
+        } as any;
+      }
+    }
+
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
     return user;
+  }
+
+  /**
+   * Generate a secure temporary password
+   * Format: Uppercase + Lowercase + Numbers + Special char (12 characters)
+   * @returns Temporary password string
+   */
+  static generateTemporaryPassword(): string {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '@$!%*?&';
+
+    // Ensure at least one of each type
+    let password = '';
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += special[Math.floor(Math.random() * special.length)];
+
+    // Fill the rest randomly
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    return password
+      .split('')
+      .sort(() => Math.random() - 0.5)
+      .join('');
+  }
+
+  /**
+   * Create a user account for an employee with a temporary password
+   * @param email - Employee email
+   * @param role - User role (defaults to employee)
+   * @param phoneNumber - Optional phone number
+   * @returns Object with user data and temporary password
+   */
+  static async createUserForEmployee(data: {
+    email: string;
+    role?: UserRole;
+    phoneNumber?: string;
+  }): Promise<{ user: User; temporaryPassword: string }> {
+    logger.info(`Creating user account for employee: ${data.email}`);
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email: data.email } });
+    if (existingUser) {
+      throw new ConflictError('User account already exists for this email');
+    }
+
+    // Generate temporary password
+    const temporaryPassword = this.generateTemporaryPassword();
+    const hashedPassword = await this.hashPassword(temporaryPassword);
+
+    const verificationToken = this.generateVerificationToken();
+    const verificationTokenExpiry = new Date();
+    verificationTokenExpiry.setHours(
+      verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS
+    );
+
+    // Create user with mustChangePassword = true
+    const user = await User.create({
+      id: uuidv4(),
+      email: data.email.toLowerCase().trim(),
+      password: hashedPassword,
+      phoneNumber: data.phoneNumber,
+      role: data.role || UserRole.EMPLOYEE,
+      emailVerified: false,
+      phoneVerified: false,
+      verificationToken,
+      verificationTokenExpiry,
+      isActive: true,
+      mustChangePassword: true, // Force password change on first login
+    });
+
+    logger.info(`User account created for employee: ${data.email} with temporary password`);
+
+    // Convert Sequelize model to plain object
+    const userPlain = user.get({ plain: true });
+
+    return {
+      user: userPlain as User,
+      temporaryPassword,
+    };
   }
 }

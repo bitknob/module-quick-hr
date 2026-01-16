@@ -2,7 +2,6 @@
 
 [← Back to API Documentation Index](./README.md)
 
-
 Base Path: `/api/auth`
 
 ## 1. User Signup
@@ -13,6 +12,7 @@ Base Path: `/api/auth`
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -23,6 +23,7 @@ Base Path: `/api/auth`
 ```
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -35,7 +36,8 @@ Base Path: `/api/auth`
       "id": "uuid",
       "email": "user@example.com",
       "role": "employee",
-      "emailVerified": false
+      "emailVerified": false,
+      "mustChangePassword": false
     },
     "accessToken": "jwt_token",
     "refreshToken": "refresh_token"
@@ -44,6 +46,7 @@ Base Path: `/api/auth`
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/signup \
   -H "Content-Type: application/json" \
@@ -65,6 +68,7 @@ curl -X POST http://localhost:9400/api/auth/signup \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -84,6 +88,7 @@ curl -X POST http://localhost:9400/api/auth/signup \
 **Note:** All device fields are optional. If provided, the device will be automatically registered.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -96,7 +101,8 @@ curl -X POST http://localhost:9400/api/auth/signup \
       "id": "uuid",
       "email": "user@example.com",
       "role": "employee",
-      "emailVerified": true
+      "emailVerified": true,
+      "mustChangePassword": false
     },
     "accessToken": "jwt_token",
     "refreshToken": "refresh_token",
@@ -110,7 +116,10 @@ curl -X POST http://localhost:9400/api/auth/signup \
 }
 ```
 
+**Note:** If `mustChangePassword` is `true`, the user must change their password before accessing other endpoints. This typically occurs when an admin creates an account with a temporary password.
+
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/login \
   -H "Content-Type: application/json" \
@@ -133,9 +142,11 @@ curl -X POST http://localhost:9400/api/auth/login \
 **Authentication:** Not required
 
 **Query Parameters:**
+
 - `token` (string, required) - Email verification token
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -152,6 +163,7 @@ curl -X POST http://localhost:9400/api/auth/login \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_token"
 ```
@@ -166,6 +178,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -173,6 +186,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -185,6 +199,7 @@ curl -X GET "http://localhost:9400/api/auth/verify-email?token=verification_toke
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/resend-verification \
   -H "Content-Type: application/json" \
@@ -203,6 +218,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -210,6 +226,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -222,6 +239,7 @@ curl -X POST http://localhost:9400/api/auth/resend-verification \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/forgot-password \
   -H "Content-Type: application/json" \
@@ -240,6 +258,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "token": "reset_token",
@@ -248,6 +267,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -263,6 +283,7 @@ curl -X POST http://localhost:9400/api/auth/forgot-password \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/reset-password \
   -H "Content-Type: application/json" \
@@ -282,6 +303,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 **Authentication:** Not required
 
 **Request Body:**
+
 ```json
 {
   "refreshToken": "refresh_token"
@@ -289,6 +311,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -304,6 +327,7 @@ curl -X POST http://localhost:9400/api/auth/reset-password \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/refresh-token \
   -H "Content-Type: application/json" \
@@ -322,6 +346,7 @@ curl -X POST http://localhost:9400/api/auth/refresh-token \
 **Authentication:** Required
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -336,12 +361,14 @@ curl -X POST http://localhost:9400/api/auth/refresh-token \
     "role": "employee",
     "emailVerified": true,
     "phoneVerified": false,
+    "mustChangePassword": false,
     "lastLogin": "2024-01-01T00:00:00.000Z"
   }
 }
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/auth/me \
   -H "Authorization: Bearer <access_token>"
@@ -357,6 +384,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "currentPassword": "OldPass123!",
@@ -365,6 +393,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -377,6 +406,7 @@ curl -X GET http://localhost:9400/api/auth/me \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/auth/change-password \
   -H "Authorization: Bearer <access_token>" \
@@ -399,6 +429,7 @@ curl -X POST http://localhost:9400/api/auth/change-password \
 Returns a dynamic menu structure based on the authenticated user's role. Each menu item includes navigation paths and icons suitable for frontend rendering.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -412,7 +443,16 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Dashboard",
       "path": "/dashboard",
       "icon": "home",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "companies",
@@ -447,20 +487,44 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Departments",
       "path": "/dashboard/departments",
       "icon": "sitemap",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager"
+      ]
     },
     {
       "id": "approvals",
       "label": "Approvals",
       "path": "/dashboard/approvals",
       "icon": "check-circle",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"],
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager"
+      ],
       "children": [
         {
           "id": "approvals-pending",
           "label": "Pending Approvals",
           "path": "/dashboard/approvals/pending",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager"
+          ]
         },
         {
           "id": "approvals-all",
@@ -475,19 +539,46 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Leave",
       "path": "/dashboard/leave",
       "icon": "calendar",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"],
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ],
       "children": [
         {
           "id": "leave-requests",
           "label": "My Leave Requests",
           "path": "/dashboard/leave/requests",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager",
+            "employee"
+          ]
         },
         {
           "id": "leave-create",
           "label": "Request Leave",
           "path": "/dashboard/leave/create",
-          "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+          "roles": [
+            "super_admin",
+            "provider_admin",
+            "provider_hr_staff",
+            "hrbp",
+            "company_admin",
+            "department_head",
+            "manager",
+            "employee"
+          ]
         }
       ]
     },
@@ -496,14 +587,32 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
       "label": "Attendance",
       "path": "/dashboard/attendance",
       "icon": "clock",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "profile",
       "label": "Profile",
       "path": "/dashboard/profile",
       "icon": "user",
-      "roles": ["super_admin", "provider_admin", "provider_hr_staff", "hrbp", "company_admin", "department_head", "manager", "employee"]
+      "roles": [
+        "super_admin",
+        "provider_admin",
+        "provider_hr_staff",
+        "hrbp",
+        "company_admin",
+        "department_head",
+        "manager",
+        "employee"
+      ]
     },
     {
       "id": "settings",
@@ -531,12 +640,14 @@ Returns a dynamic menu structure based on the authenticated user's role. Each me
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/auth/menu \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Menu Structure:**
+
 - Each menu item includes:
   - `id`: Unique identifier for the menu item
   - `label`: Display text for the menu item
@@ -549,8 +660,124 @@ curl -X GET http://localhost:9400/api/auth/menu \
 The API automatically filters menu items based on the authenticated user's role. Only menu items that the user's role has access to are returned.
 
 **Available Menu Items by Role:**
+
 - **Super Admin / Provider Admin / Provider HR Staff**: All menu items including Companies, Employees, Departments, Approvals, Leave, Attendance, Profile, Settings
 - **HRBP / Company Admin**: Employees, Departments, Approvals, Leave, Attendance, Profile, Settings (no Companies)
 - **Department Head / Manager**: Departments, Approvals, Leave, Attendance, Profile (no Companies, Employees, Settings)
 - **Employee**: Dashboard, Leave, Attendance, Profile (basic self-service items only)
 
+---
+
+## 11. Create User Account for Employee
+
+**Method:** `POST`  
+**URL:** `/api/auth/create-user-for-employee`  
+**Full URL:** `http://localhost:9400/api/auth/create-user-for-employee`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `company_admin`
+
+**Description:**
+Create a user account for an employee with a system-generated temporary password. The employee will be required to change their password on first login. This endpoint is typically used when administrators onboard new employees.
+
+**Request Body:**
+
+```json
+{
+  "email": "newemployee@company.com",
+  "phoneNumber": "+1234567890",
+  "role": "employee"
+}
+```
+
+**Request Body Parameters:**
+
+- `email` (string, required) - Employee email address (must be unique)
+- `phoneNumber` (string, optional) - Employee phone number
+- `role` (string, optional) - User role. Default: `employee`. Options: `employee`, `manager`, `department_head`, `company_admin`, `hrbp`, `provider_hr_staff`, `provider_admin`, `super_admin`
+
+**Response (201):**
+
+```json
+{
+  "header": {
+    "responseCode": 201,
+    "responseMessage": "User account created successfully",
+    "responseDetail": "Employee must change password on first login"
+  },
+  "response": {
+    "user": {
+      "id": "uuid",
+      "email": "newemployee@company.com",
+      "role": "employee",
+      "emailVerified": false,
+      "mustChangePassword": true
+    },
+    "temporaryPassword": "Xy9@mK2pLq4n"
+  }
+}
+```
+
+**Important Notes:**
+
+- The `temporaryPassword` is only returned once and should be securely communicated to the employee
+- The password is randomly generated with 12 characters including uppercase, lowercase, numbers, and special characters
+- The `mustChangePassword` flag is set to `true`, requiring the employee to change their password on first login
+- Only administrators can create user accounts for employees
+- Super admin and provider admin roles can only be created by super admins
+
+**Error Responses:**
+
+**409 - Email Already Exists:**
+
+```json
+{
+  "header": {
+    "responseCode": 409,
+    "responseMessage": "User account already exists for this email",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**403 - Insufficient Permissions:**
+
+```json
+{
+  "header": {
+    "responseCode": 403,
+    "responseMessage": "Only super admins can create super admin or provider admin accounts",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+
+```bash
+curl -X POST http://localhost:9400/api/auth/create-user-for-employee \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newemployee@company.com",
+    "phoneNumber": "+1234567890",
+    "role": "employee"
+  }'
+```
+
+**Security Considerations:**
+
+- The temporary password should be transmitted securely to the employee (e.g., via secure email, SMS, or in-person)
+- The temporary password is only shown once in the API response
+- Employees must change their password on first login
+- The system enforces password complexity requirements when changing the password
+
+**Workflow:**
+
+1. Admin calls this endpoint to create a user account
+2. System generates a secure temporary password
+3. Admin securely shares the temporary password with the employee
+4. Employee logs in with the temporary password
+5. System detects `mustChangePassword: true` and prompts for password change
+6. Employee sets a new password and can then access the system normally

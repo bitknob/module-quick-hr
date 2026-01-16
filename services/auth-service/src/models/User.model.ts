@@ -15,18 +15,19 @@ export interface UserAttributes {
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
   lastLogin?: Date;
+  mustChangePassword: boolean;
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface UserCreationAttributes
-  extends Optional<UserAttributes, 'id' | 'emailVerified' | 'phoneVerified' | 'isActive' | 'createdAt' | 'updatedAt'> {}
+  extends Optional<
+    UserAttributes,
+    'id' | 'emailVerified' | 'phoneVerified' | 'isActive' | 'createdAt' | 'updatedAt'
+  > {}
 
-export class User
-  extends Model<UserAttributes, UserCreationAttributes>
-  implements UserAttributes
-{
+export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
   public email!: string;
   public password!: string;
@@ -39,6 +40,7 @@ export class User
   public resetPasswordToken?: string;
   public resetPasswordTokenExpiry?: Date;
   public lastLogin?: Date;
+  public mustChangePassword!: boolean;
   public isActive!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -110,6 +112,10 @@ User.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    mustChangePassword: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -138,4 +144,3 @@ User.init(
     ],
   }
 );
-

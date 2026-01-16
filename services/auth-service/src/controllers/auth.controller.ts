@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { DeviceService } from '../services/device.service';
-import { UserRole, ValidationError, ResponseFormatter, DeviceType } from '@hrm/common';
+import { UserRole, ValidationError, ResponseFormatter, DeviceType, logger } from '@hrm/common';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -144,6 +144,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
           email: result.user.email,
           role: result.user.role,
           emailVerified: result.user.emailVerified,
+          mustChangePassword: result.user.mustChangePassword,
         },
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -344,17 +345,18 @@ export const getCurrentUser = async (
     }
 
     const user = await AuthService.getUserById(userId);
+    const plainUser = user.get({ plain: true });
 
     ResponseFormatter.success(
       res,
       {
-        id: user.id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        emailVerified: user.emailVerified,
-        phoneVerified: user.phoneVerified,
-        lastLogin: user.lastLogin,
+        id: plainUser.id,
+        email: plainUser.email,
+        phoneNumber: plainUser.phoneNumber,
+        role: plainUser.role,
+        emailVerified: plainUser.emailVerified,
+        phoneVerified: plainUser.phoneVerified,
+        lastLogin: plainUser.lastLogin,
       },
       'User retrieved successfully'
     );
@@ -402,17 +404,19 @@ export const assignUserRole = async (
       validatedData.role,
       currentUserId
     );
+    // Check if user is a Sequelize model instance or already a plain object
+    const plainUser = typeof user.get === 'function' ? user.get({ plain: true }) : user;
 
     ResponseFormatter.success(
       res,
       {
-        id: user.id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        emailVerified: user.emailVerified,
-        phoneVerified: user.phoneVerified,
-        updatedAt: user.updatedAt,
+        id: plainUser.id,
+        email: plainUser.email,
+        phoneNumber: plainUser.phoneNumber,
+        role: plainUser.role,
+        emailVerified: plainUser.emailVerified,
+        phoneVerified: plainUser.phoneVerified,
+        updatedAt: plainUser.updatedAt,
       },
       'Role assigned successfully',
       `User role updated to ${validatedData.role}`
@@ -466,19 +470,20 @@ export const getUserRole = async (
 
     try {
       const user = await AuthService.getUserWithRole(userId);
+      const plainUser = user.get({ plain: true });
 
       ResponseFormatter.success(
         res,
         {
-          id: user.id,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          emailVerified: user.emailVerified,
-          phoneVerified: user.phoneVerified,
-          isActive: user.isActive,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
+          id: plainUser.id,
+          email: plainUser.email,
+          phoneNumber: plainUser.phoneNumber,
+          role: plainUser.role,
+          emailVerified: plainUser.emailVerified,
+          phoneVerified: plainUser.phoneVerified,
+          isActive: plainUser.isActive,
+          createdAt: plainUser.createdAt,
+          updatedAt: plainUser.updatedAt,
         },
         'User role retrieved successfully'
       );
@@ -527,19 +532,21 @@ export const getUserRoleByEmail = async (
 
     try {
       const user = await AuthService.getUserByEmailWithRole(email);
+      // Check if user is a Sequelize model instance or already a plain object
+      const plainUser = typeof user.get === 'function' ? user.get({ plain: true }) : user;
 
       ResponseFormatter.success(
         res,
         {
-          id: user.id,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          emailVerified: user.emailVerified,
-          phoneVerified: user.phoneVerified,
-          isActive: user.isActive,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
+          id: plainUser.id,
+          email: plainUser.email,
+          phoneNumber: plainUser.phoneNumber,
+          role: plainUser.role,
+          emailVerified: plainUser.emailVerified,
+          phoneVerified: plainUser.phoneVerified,
+          isActive: plainUser.isActive,
+          createdAt: plainUser.createdAt,
+          updatedAt: plainUser.updatedAt,
         },
         'User role retrieved successfully'
       );
@@ -560,6 +567,75 @@ export const getUserRoleByEmail = async (
       throw error;
     }
   } catch (error) {
+    next(error);
+  }
+};
+
+const createUserForEmployeeSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.nativeEnum(UserRole).optional(),
+  phoneNumber: z.string().optional(),
+});
+
+/**
+ * Create a user account for an employee with a temporary password
+ * Only admins can create user accounts for employees
+ */
+export const createUserForEmployee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currentUserRole = (req as any).user?.role;
+
+    // Only admins can create user accounts for employees
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.COMPANY_ADMIN,
+      ].includes(currentUserRole)
+    ) {
+      return next(new ValidationError('Insufficient permissions to create user accounts'));
+    }
+
+    const validatedData = createUserForEmployeeSchema.parse(req.body);
+
+    // Prevent non-super-admins from creating privileged roles
+    if (
+      validatedData.role &&
+      [UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN].includes(validatedData.role) &&
+      currentUserRole !== UserRole.SUPER_ADMIN
+    ) {
+      return next(
+        new ValidationError('Only super admins can create super admin or provider admin accounts')
+      );
+    }
+
+    const result = await AuthService.createUserForEmployee(validatedData);
+
+    ResponseFormatter.success(
+      res,
+      {
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          emailVerified: result.user.emailVerified,
+          mustChangePassword: result.user.mustChangePassword,
+        },
+        temporaryPassword: result.temporaryPassword,
+      },
+      'User account created successfully',
+      'Employee must change password on first login',
+      201
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(new ValidationError(error.errors[0].message));
+    }
     next(error);
   }
 };
