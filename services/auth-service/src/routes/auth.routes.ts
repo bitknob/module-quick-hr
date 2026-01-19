@@ -3,6 +3,7 @@ import {
   signup,
   login,
   verifyEmail,
+  serveVerificationPage,
   resendVerificationEmail,
   forgotPassword,
   resetPassword,
@@ -23,6 +24,7 @@ const router = Router();
 router.post('/signup', signup);
 router.post('/login', login);
 router.get('/verify-email', verifyEmail);
+router.get('/verify-email-page', serveVerificationPage);
 router.post('/resend-verification', resendVerificationEmail);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

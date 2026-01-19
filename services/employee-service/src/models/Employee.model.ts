@@ -24,36 +24,38 @@ export interface EmployeeAttributes {
   updatedAt?: Date;
 }
 
-export interface EmployeeCreationAttributes
-  extends Optional<EmployeeAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface EmployeeCreationAttributes extends Optional<
+  EmployeeAttributes,
+  'id' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Employee
   extends Model<EmployeeAttributes, EmployeeCreationAttributes>
   implements EmployeeAttributes
 {
-  public id!: string;
-  public userEmail!: string;
-  public companyId!: string;
-  public employeeId!: string;
-  public firstName!: string;
-  public lastName!: string;
-  public userCompEmail!: string;
-  public phoneNumber?: string;
-  public dateOfBirth?: Date;
-  public address?: string;
-  public jobTitle!: string;
-  public department!: string;
-  public managerId?: string;
-  public hireDate!: Date;
-  public salary?: number;
-  public status!: 'active' | 'inactive' | 'terminated';
-  public role?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public id: string;
+  declare public userEmail: string;
+  declare public companyId: string;
+  declare public employeeId: string;
+  declare public firstName: string;
+  declare public lastName: string;
+  declare public userCompEmail: string;
+  declare public phoneNumber?: string;
+  declare public dateOfBirth?: Date;
+  declare public address?: string;
+  declare public jobTitle: string;
+  declare public department: string;
+  declare public managerId?: string;
+  declare public hireDate: Date;
+  declare public salary?: number;
+  declare public status: 'active' | 'inactive' | 'terminated';
+  declare public role?: string;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 
-  public manager?: Employee;
-  public subordinates?: Employee[];
-  public company?: Company;
+  declare public manager?: Employee;
+  declare public subordinates?: Employee[];
+  declare public company?: Company;
 }
 
 Employee.init(

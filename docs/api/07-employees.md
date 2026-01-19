@@ -123,7 +123,7 @@ curl -X GET http://localhost:9400/api/employees/me \
       "id": "uuid",
       "documentType": "pan_card",
       "documentName": "PAN Card",
-      "fileUrl": "https://storage.googleapis.com/...",
+      "fileUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/documents/pan_card.pdf",
       "status": "verified",
       "verifiedAt": "2024-01-16T14:00:00.000Z",
       "verifier": {
@@ -221,7 +221,7 @@ curl -X GET "http://localhost:9400/api/employees/documents?documentType=pan_card
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "createdAt": "2024-01-15T10:00:00.000Z",
@@ -404,14 +404,14 @@ curl -X POST http://localhost:9400/api/employees \
     "employeeId": "EMP001",
     "firstName": "John",
     "lastName": "Doe",
-    "email": "john.doe@example.com",
+    "userCompEmail": "john.doe@example.com",
     "jobTitle": "Software Engineer",
     "department": "Engineering",
     "manager": {
       "id": "manager_uuid",
       "firstName": "Manager",
       "lastName": "Name",
-      "email": "manager@example.com",
+      "userCompEmail": "manager@example.com",
       "jobTitle": "Engineering Manager"
     },
     "status": "active"
@@ -553,7 +553,7 @@ curl -X DELETE http://localhost:9400/api/employees/{employee_id} \
       "employeeId": "EMP001",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "jobTitle": "Software Engineer",
       "department": "Engineering",
       "status": "active"
@@ -638,7 +638,7 @@ curl -X GET "http://localhost:9400/api/employees/hierarchy?rootId=root_employee_
       "employeeId": "EMP002",
       "firstName": "Jane",
       "lastName": "Smith",
-      "email": "jane.smith@example.com",
+      "userCompEmail": "jane.smith@example.com",
       "jobTitle": "Developer"
     }
   ]
@@ -680,7 +680,7 @@ curl -X GET http://localhost:9400/api/employees/manager/{manager_id}/direct-repo
       "employeeId": "EMP002",
       "firstName": "Jane",
       "lastName": "Smith",
-      "email": "jane.smith@example.com",
+      "userCompEmail": "jane.smith@example.com",
       "jobTitle": "Developer",
       "department": "Engineering",
       "status": "active"

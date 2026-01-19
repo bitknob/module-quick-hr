@@ -306,9 +306,57 @@ export const getDocumentsByCompany = async (
   try {
     const { companyId } = req.params;
     const documentType = req.query.documentType as DocumentType | undefined;
-    const status = req.query.status as DocumentStatus | undefined;
+    const status = req.query.status as DocumentStatus | undefined; // Use correct type
 
-    const documents = await DocumentService.getDocumentsByCompany(companyId, documentType, status);
+    const userRole = req.user?.role as UserRole;
+    const userEmail = req.user?.email;
+
+    // Define privileged roles that can see all company documents
+    const privilegedRoles = [
+      UserRole.SUPER_ADMIN,
+      UserRole.PROVIDER_ADMIN,
+      UserRole.PROVIDER_HR_STAFF,
+      UserRole.HRBP,
+      UserRole.COMPANY_ADMIN,
+    ];
+
+    let documents: any[] = [];
+
+    if (userRole && privilegedRoles.includes(userRole)) {
+      // Privileged users: Fetch all documents for the company
+      documents = await DocumentService.getDocumentsByCompany(companyId, documentType, status);
+    } else {
+      // Regular employees: Fetch only their own documents
+      if (!userEmail) {
+        // Should not happen if authenticated, but safe fallback
+        ResponseFormatter.success(res, [], 'Documents retrieved successfully');
+        return;
+      }
+
+      const employee = await EmployeeQueries.findByUserEmail(userEmail);
+
+      if (!employee) {
+        // User logged in but has no employee record
+        ResponseFormatter.success(res, [], 'Documents retrieved successfully (no employee record)');
+        return;
+      }
+
+      // Security check: Ensure employee belongs to the requested company
+      // If employee exists but companyId doesn't match, return empty to prevent data leakage
+      // unless we want to throw 403 Forbidden. Returning empty is often safer/simpler for lists.
+      if (employee.companyId !== companyId) {
+        ResponseFormatter.success(res, [], 'Documents retrieved successfully');
+        return;
+      }
+
+      documents = await DocumentService.getDocumentsByEmployee(
+        employee.id,
+        companyId,
+        documentType,
+        status
+      );
+    }
+
     const documentsData = documents.map((d) => (d.toJSON ? d.toJSON() : d));
 
     ResponseFormatter.success(res, documentsData, 'Documents retrieved successfully');
@@ -348,6 +396,70 @@ export const searchDocuments = async (
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+
+    const result = await DocumentService.searchDocuments(filters, page, limit);
+    const documentsData = result.rows.map((d) => (d.toJSON ? d.toJSON() : d));
+
+    ResponseFormatter.paginated(
+      res,
+      documentsData,
+      result.count,
+      page,
+      limit,
+      'Documents retrieved successfully'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllDocuments = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userRole = req.user?.role as UserRole;
+    const userEmail = req.user?.email;
+
+    const filters: any = {};
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    // Define privileged roles who can see all documents
+    const privilegedRoles = [
+      UserRole.SUPER_ADMIN,
+      UserRole.PROVIDER_ADMIN,
+      UserRole.PROVIDER_HR_STAFF,
+      UserRole.HRBP,
+    ];
+
+    if (privilegedRoles.includes(userRole)) {
+      // Privileged users can see all documents
+      // Optional: Allow filtering if parameters are provided
+      if (req.query.companyId) filters.companyId = req.query.companyId;
+      if (req.query.employeeId) filters.employeeId = req.query.employeeId;
+      if (req.query.documentType) filters.documentType = req.query.documentType;
+      if (req.query.status) filters.status = req.query.status;
+    } else {
+      // Regular employees: Restricted to their own documents
+      if (!userEmail) {
+        ResponseFormatter.success(res, [], 'Documents retrieved successfully');
+        return;
+      }
+
+      const employee = await EmployeeQueries.findByUserEmail(userEmail);
+
+      if (!employee) {
+        ResponseFormatter.success(res, [], 'Documents retrieved successfully (no employee record)');
+        return;
+      }
+
+      filters.employeeId = employee.id;
+      // Allow filtering within their own documents
+      if (req.query.documentType) filters.documentType = req.query.documentType;
+      if (req.query.status) filters.status = req.query.status;
+    }
 
     const result = await DocumentService.searchDocuments(filters, page, limit);
     const documentsData = result.rows.map((d) => (d.toJSON ? d.toJSON() : d));

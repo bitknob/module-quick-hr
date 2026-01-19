@@ -140,7 +140,7 @@ curl -X POST http://localhost:9400/api/attendance \
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "createdAt": "2024-01-15T08:00:00.000Z",

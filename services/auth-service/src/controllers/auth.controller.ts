@@ -79,6 +79,9 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
     const signupData = {
       ...validatedData,
       role: validatedData.role || UserRole.EMPLOYEE,
+      ipAddress: req.ip || req.socket.remoteAddress || undefined,
+      userAgent: req.headers['user-agent'] || undefined,
+      requestBody: req.body,
     };
 
     const result = await AuthService.signup(signupData);
@@ -179,7 +182,10 @@ export const verifyEmail = async (
       return next(new ValidationError('Verification token is required'));
     }
 
-    const user = await AuthService.verifyEmail(token);
+    const ipAddress = req.ip || req.socket.remoteAddress || undefined;
+    const userAgent = req.headers['user-agent'] || undefined;
+
+    const user = await AuthService.verifyEmail(token, ipAddress, userAgent);
 
     ResponseFormatter.success(
       res,
@@ -207,12 +213,20 @@ export const resendVerificationEmail = async (
       return next(new ValidationError('Email is required'));
     }
 
-    await AuthService.resendVerificationEmail(email);
+    const ipAddress = req.ip || req.socket.remoteAddress || undefined;
+    const userAgent = req.headers['user-agent'] || undefined;
+
+    await AuthService.resendVerificationEmail(email, ipAddress, userAgent);
 
     ResponseFormatter.success(res, null, 'Verification email sent successfully');
   } catch (error) {
     next(error);
   }
+};
+
+export const serveVerificationPage = (req: Request, res: Response): void => {
+  const path = require('path');
+  res.sendFile(path.join(__dirname, '../views/verify-email.html'));
 };
 
 export const forgotPassword = async (

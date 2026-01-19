@@ -41,12 +41,12 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'requestedByEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Employee,
           as: 'requestedForEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
     });
@@ -88,12 +88,12 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'requestedByEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Employee,
           as: 'requestedForEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -148,12 +148,12 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'requestedByEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
         {
           model: Employee,
           as: 'requestedForEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -183,7 +183,7 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
       order: [['order', 'ASC']],
@@ -203,7 +203,7 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
     });
@@ -291,7 +291,7 @@ export class ApprovalQueries {
         {
           model: Employee,
           as: 'performedByEmployee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'jobTitle'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'jobTitle'],
         },
       ],
       order: [['createdAt', 'ASC']],

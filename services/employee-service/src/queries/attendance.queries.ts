@@ -17,7 +17,7 @@ export class AttendanceQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
     });
@@ -42,7 +42,7 @@ export class AttendanceQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
     });
@@ -74,7 +74,7 @@ export class AttendanceQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
       order: [['date', 'DESC']],
@@ -107,7 +107,7 @@ export class AttendanceQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
       order: [['date', 'DESC']],
@@ -251,7 +251,7 @@ export class AttendanceQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
       order: [['date', 'DESC']],

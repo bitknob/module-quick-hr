@@ -85,7 +85,7 @@ export class SearchService {
           path: `/dashboard/employees/${empData.id}`,
           icon: 'user',
           metadata: {
-            email: empData.userCompEmail,
+            userCompEmail: empData.userCompEmail,
             employeeId: empData.employeeId,
             companyId: empData.companyId,
           },
@@ -125,8 +125,8 @@ export class SearchService {
           subtitle: companyData.code
             ? `${companyData.code}${companyData.status === 'inactive' ? ' (Inactive)' : ''}`
             : companyData.status === 'inactive'
-            ? '(Inactive)'
-            : '',
+              ? '(Inactive)'
+              : '',
           path: `/dashboard/companies/${companyData.id}`,
           icon: 'building',
           metadata: {

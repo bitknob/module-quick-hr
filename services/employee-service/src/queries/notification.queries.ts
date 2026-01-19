@@ -25,7 +25,7 @@ export class NotificationQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Company,
@@ -66,7 +66,7 @@ export class NotificationQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Company,
@@ -110,7 +110,7 @@ export class NotificationQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Company,
@@ -149,7 +149,7 @@ export class NotificationQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
       order: [['createdAt', 'DESC']],

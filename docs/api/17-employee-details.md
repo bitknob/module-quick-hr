@@ -231,7 +231,7 @@ curl -X POST http://localhost:9400/api/employee-details/{employee_id}/{company_i
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "createdAt": "2024-01-15T10:00:00.000Z",
@@ -345,7 +345,7 @@ curl -X PUT http://localhost:9400/api/employee-details/{employee_id}/{company_id
         "id": "employee_uuid",
         "firstName": "John",
         "lastName": "Doe",
-        "email": "john.doe@example.com",
+        "userCompEmail": "john.doe@example.com",
         "employeeId": "EMP001"
       }
     }

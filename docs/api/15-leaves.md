@@ -142,7 +142,7 @@ curl -X POST http://localhost:9400/api/leaves \
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "approver": {

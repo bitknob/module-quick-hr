@@ -1,79 +1,35 @@
-import sgMail from '@sendgrid/mail';
-import nodemailer from 'nodemailer';
-import { logger } from '@hrm/common';
+import { logger, sendEmail as sendCommonEmail } from '@hrm/common';
 
 export enum EmailProvider {
   SENDGRID = 'sendgrid',
   SMTP = 'smtp',
   CUSTOM = 'custom',
+  BREVO = 'brevo',
 }
 
 interface EmailConfig {
   provider: EmailProvider;
-  sendgridApiKey?: string;
-  smtpHost?: string;
-  smtpPort?: number;
-  smtpUser?: string;
-  smtpPassword?: string;
-  smtpSecure?: boolean;
   fromEmail?: string;
   fromName?: string;
   customDomain?: string;
 }
 
+// Minimal config needed for backward compatibility
 let emailConfig: EmailConfig = {
-  provider: (process.env.EMAIL_PROVIDER as EmailProvider) || EmailProvider.SMTP,
-  sendgridApiKey: process.env.SENDGRID_API_KEY,
-  smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
-  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
-  smtpUser: process.env.SMTP_USER,
-  smtpPassword: process.env.SMTP_PASSWORD,
-  smtpSecure: process.env.SMTP_SECURE === 'true',
+  provider: (process.env.EMAIL_PROVIDER as EmailProvider) || EmailProvider.BREVO,
   fromEmail: process.env.FROM_EMAIL || 'noreply@hrm.com',
   fromName: process.env.FROM_NAME || 'HRM System',
   customDomain: process.env.CUSTOM_EMAIL_DOMAIN,
 };
 
-let smtpTransporter: nodemailer.Transporter | null = null;
-
+// No-op for now as we delegate to @hrm/common which reads env vars directly
 export const initializeEmailService = (): void => {
-  try {
-    if (emailConfig.provider === EmailProvider.SENDGRID) {
-      if (!emailConfig.sendgridApiKey) {
-        throw new Error('SENDGRID_API_KEY is required when using SendGrid');
-      }
-      sgMail.setApiKey(emailConfig.sendgridApiKey);
-      logger.info('SendGrid email service initialized');
-    } else if (emailConfig.provider === EmailProvider.SMTP) {
-      if (!emailConfig.smtpUser || !emailConfig.smtpPassword) {
-        throw new Error('SMTP_USER and SMTP_PASSWORD are required when using SMTP');
-      }
-
-      smtpTransporter = nodemailer.createTransport({
-        host: emailConfig.smtpHost,
-        port: emailConfig.smtpPort,
-        secure: emailConfig.smtpSecure,
-        auth: {
-          user: emailConfig.smtpUser,
-          pass: emailConfig.smtpPassword,
-        },
-      });
-
-      logger.info('SMTP email service initialized');
-    } else {
-      logger.warn('Custom email provider configured - ensure custom implementation is provided');
-    }
-  } catch (error) {
-    logger.error('Error initializing email service:', error);
-    throw error;
-  }
+  logger.info('Email service initialized via @hrm/common');
 };
 
 export const updateEmailConfig = (config: Partial<EmailConfig>): void => {
   emailConfig = { ...emailConfig, ...config };
-  if (config.provider) {
-    initializeEmailService();
-  }
+  logger.info('Email config updated');
 };
 
 export interface EmailOptions {
@@ -81,7 +37,7 @@ export interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
-  from?: string;
+  from?: string; // Legacy string format
   replyTo?: string;
 }
 
@@ -89,35 +45,56 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
     const fromEmail = options.from || emailConfig.fromEmail || 'noreply@hrm.com';
     const fromName = emailConfig.fromName || 'HRM System';
-    const from = emailConfig.customDomain
-      ? `${fromName} <${fromName.toLowerCase().replace(/\s+/g, '.')}@${emailConfig.customDomain}>`
-      : `${fromName} <${fromEmail}>`;
 
-    if (emailConfig.provider === EmailProvider.SENDGRID) {
-      const msg = {
-        to: Array.isArray(options.to) ? options.to : [options.to],
-        from,
-        subject: options.subject,
-        text: options.text,
-        html: options.html,
-        replyTo: options.replyTo,
-      };
-
-      await sgMail.send(msg);
-      logger.info(`Email sent via SendGrid to ${options.to}`);
-    } else if (emailConfig.provider === EmailProvider.SMTP && smtpTransporter) {
-      await smtpTransporter.sendMail({
-        from,
-        to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
-        subject: options.subject,
-        text: options.text || options.html.replace(/<[^>]*>/g, ''),
-        html: options.html,
-        replyTo: options.replyTo,
-      });
-      logger.info(`Email sent via SMTP to ${options.to}`);
+    // Convert 'to' to the format expected by common lib
+    let recipients: { email: string }[] = [];
+    if (Array.isArray(options.to)) {
+      recipients = options.to.map((email) => ({ email }));
+    } else if (typeof options.to === 'string') {
+      recipients = [{ email: options.to }];
     } else {
-      throw new Error('Email service not properly configured');
+      console.warn('[AuthService] options.to is neither string nor array:', options.to);
     }
+
+    // Filter out any potential empty email objects
+    recipients = recipients.filter((r) => r && r.email && r.email.trim() !== '');
+
+    console.log('[AuthService] Resolved recipients:', JSON.stringify(recipients));
+
+    // The common library expects recipients as object array
+    // Filters empty ones to be safe
+    const validRecipients = recipients.filter(
+      (r) => r && r.email && typeof r.email === 'string' && r.email.trim() !== ''
+    );
+
+    if (validRecipients.length === 0) {
+      throw new Error('No valid recipients provided');
+    }
+
+    const commonOptions = {
+      to: validRecipients,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+      from: { name: fromName, email: fromEmail },
+    };
+
+    console.log(
+      '[AuthService] Calling common sendEmail with options:',
+      JSON.stringify(commonOptions, null, 2)
+    );
+    console.log('[AuthService] Env check - EMAIL_PROVIDER:', process.env.EMAIL_PROVIDER);
+    console.log('[AuthService] Env check - BREVO_API_KEY present:', !!process.env.BREVO_API_KEY);
+
+    const success = await sendCommonEmail(commonOptions);
+
+    if (!success) {
+      throw new Error('Failed to send email via common service');
+    }
+
+    logger.info(
+      `Email sent successfully to ${Array.isArray(options.to) ? options.to.join(', ') : options.to}`
+    );
   } catch (error) {
     logger.error('Error sending email:', error);
     throw error;
@@ -125,17 +102,6 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 };
 
 export const verifyEmailConnection = async (): Promise<boolean> => {
-  try {
-    if (emailConfig.provider === EmailProvider.SMTP && smtpTransporter) {
-      await smtpTransporter.verify();
-      return true;
-    } else if (emailConfig.provider === EmailProvider.SENDGRID) {
-      return true;
-    }
-    return false;
-  } catch (error) {
-    logger.error('Email connection verification failed:', error);
-    return false;
-  }
+  // Simple check if API key exists
+  return !!process.env.BREVO_API_KEY;
 };
-

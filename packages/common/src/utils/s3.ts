@@ -11,7 +11,11 @@ const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
 const S3_REGION = process.env.S3_REGION;
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
-const S3_BASE_URL = process.env.S3_BASE_URL || (S3_BUCKET_NAME && S3_REGION ? `https://${S3_BUCKET_NAME}.s3.${S3_REGION}.amazonaws.com` : undefined);
+const S3_BASE_URL =
+  process.env.S3_BASE_URL ||
+  (S3_BUCKET_NAME && S3_REGION
+    ? `https://${S3_BUCKET_NAME}.s3.${S3_REGION}.amazonaws.com`
+    : undefined);
 
 // AWS S3 Free Tier Limits (per month)
 // - 5 GB of standard storage
@@ -64,7 +68,12 @@ export const uploadToS3 = async (
   folder: 'documents' | 'images',
   mimeType: string,
   isPublic: boolean = true
-): Promise<{ url: string; compressedSize: number; originalSize: number; compressionRatio: number }> => {
+): Promise<{
+  url: string;
+  compressedSize: number;
+  originalSize: number;
+  compressionRatio: number;
+}> => {
   try {
     // Validate required configuration
     if (!S3_BUCKET_NAME) {
@@ -73,13 +82,15 @@ export const uploadToS3 = async (
     if (!S3_REGION) {
       throw new Error('S3_REGION environment variable is required');
     }
-    
+
     const s3Client = getS3Client();
 
     // Check if credentials are configured via environment variables
     // If not, AWS SDK will attempt to use default credential chain (IAM roles, etc.)
     if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
-      logger.warn('AWS credentials not found in environment variables. Attempting to use AWS SDK default credential chain.');
+      logger.warn(
+        'AWS credentials not found in environment variables. Attempting to use AWS SDK default credential chain.'
+      );
     }
 
     // Compress file before upload to reduce storage usage
@@ -91,12 +102,13 @@ export const uploadToS3 = async (
     });
     const finalBuffer = compressedBuffer;
     const compressedSize = finalBuffer.length;
-    const compressionRatio = originalSize > 0 ? ((originalSize - compressedSize) / originalSize) * 100 : 0;
+    const compressionRatio =
+      originalSize > 0 ? ((originalSize - compressedSize) / originalSize) * 100 : 0;
 
     if (compressionRatio > 0) {
       logger.info(
         `File compressed before upload: ${(originalSize / 1024 / 1024).toFixed(2)}MB -> ` +
-        `${(compressedSize / 1024 / 1024).toFixed(2)}MB (${compressionRatio.toFixed(1)}% reduction)`
+          `${(compressedSize / 1024 / 1024).toFixed(2)}MB (${compressionRatio.toFixed(1)}% reduction)`
       );
     }
 
@@ -119,7 +131,7 @@ export const uploadToS3 = async (
       Key: key,
       Body: finalBuffer,
       ContentType: mimeType,
-      ACL: isPublic ? 'public-read' : 'private',
+      // ACL removed as it's not supported when "Bucket owner enforced" is enabled
       StorageClass: 'STANDARD', // Free tier covers STANDARD storage
       Metadata: {
         originalName: originalName,
@@ -137,7 +149,9 @@ export const uploadToS3 = async (
 
     // Get public URL
     if (!S3_BASE_URL) {
-      throw new Error('S3_BASE_URL is not configured. Please set S3_BASE_URL or ensure S3_BUCKET_NAME and S3_REGION are set.');
+      throw new Error(
+        'S3_BASE_URL is not configured. Please set S3_BASE_URL or ensure S3_BUCKET_NAME and S3_REGION are set.'
+      );
     }
     const publicUrl = `${S3_BASE_URL}/${key}`;
 
@@ -168,13 +182,15 @@ export const deleteFromS3 = async (fileUrl: string): Promise<void> => {
     if (!S3_REGION) {
       throw new Error('S3_REGION environment variable is required');
     }
-    
+
     const s3Client = getS3Client();
 
     // Check if credentials are configured via environment variables
     // If not, AWS SDK will attempt to use default credential chain (IAM roles, etc.)
     if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
-      logger.warn('AWS credentials not found in environment variables. Attempting to use AWS SDK default credential chain.');
+      logger.warn(
+        'AWS credentials not found in environment variables. Attempting to use AWS SDK default credential chain.'
+      );
     }
 
     // Extract key from URL
@@ -223,7 +239,12 @@ export const uploadDocumentToS3 = async (
   fileBuffer: Buffer,
   originalName: string,
   mimeType: string
-): Promise<{ url: string; compressedSize: number; originalSize: number; compressionRatio: number }> => {
+): Promise<{
+  url: string;
+  compressedSize: number;
+  originalSize: number;
+  compressionRatio: number;
+}> => {
   return uploadToS3(fileBuffer, originalName, 'documents', mimeType, true);
 };
 
@@ -238,7 +259,11 @@ export const uploadImageToS3 = async (
   fileBuffer: Buffer,
   originalName: string,
   mimeType: string
-): Promise<{ url: string; compressedSize: number; originalSize: number; compressionRatio: number }> => {
+): Promise<{
+  url: string;
+  compressedSize: number;
+  originalSize: number;
+  compressionRatio: number;
+}> => {
   return uploadToS3(fileBuffer, originalName, 'images', mimeType, true);
 };
-

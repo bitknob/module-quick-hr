@@ -2,7 +2,6 @@
 
 [← Back to API Documentation Index](./README.md)
 
-
 Base Path: `/api/search`
 
 The global search endpoint allows users to search across multiple entities (employees, companies, departments, and menus) with a single query. Results are automatically filtered based on the user's role and company access.
@@ -15,10 +14,12 @@ The global search endpoint allows users to search across multiple entities (empl
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `q` or `searchTerm` (string, required) - Search term (minimum 2 characters)
 - `limit` (number, optional) - Maximum number of results to return (default: 20, max: 50)
 
 **Access Control:**
+
 - **Employees**: Searchable by Super Admin, Provider Admin, Provider HR Staff, HRBP, Company Admin, Department Head, Manager
   - Non-super-admin users only see employees from their company
 - **Companies**: Searchable by Super Admin, Provider Admin, Provider HR Staff only
@@ -27,6 +28,7 @@ The global search endpoint allows users to search across multiple entities (empl
 - **Menus**: Searchable by all authenticated users (role-based menu filtering applies)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -44,7 +46,7 @@ The global search endpoint allows users to search across multiple entities (empl
         "path": "/dashboard/employees/employee-uuid",
         "icon": "user",
         "metadata": {
-          "email": "john.doe@example.com",
+          "userCompEmail": "john.doe@example.com",
           "employeeId": "EMP001",
           "companyId": "company-uuid"
         }
@@ -95,6 +97,7 @@ The global search endpoint allows users to search across multiple entities (empl
 ```
 
 **Response (400) - Invalid Search Term:**
+
 ```json
 {
   "header": {
@@ -107,12 +110,14 @@ The global search endpoint allows users to search across multiple entities (empl
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/search?q=john&limit=20" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Search Features:**
+
 - **Multi-entity search**: Searches across employees, companies, departments, and menus simultaneously
 - **Role-based filtering**: Only returns results the user is authorized to see
 - **Company isolation**: Non-super-admin users only see results from their company
@@ -122,14 +127,15 @@ curl -X GET "http://localhost:9400/api/search?q=john&limit=20" \
 - **Partial matching**: Matches partial strings in names, emails, IDs, job titles, etc.
 
 **Search Fields:**
-- **Employees**: firstName, lastName, email, employeeId, jobTitle, department
+
+- **Employees**: firstName, lastName, userCompEmail, employeeId, jobTitle, department
 - **Companies**: name, code, description
 - **Departments**: name, description
 - **Menus**: label, path
 
 **Notes:**
+
 - Search term must be at least 2 characters long
 - Maximum limit is 50 results
 - Results are automatically filtered based on user role and company access
 - Menu results are filtered based on the user's role (only accessible menus are returned)
-

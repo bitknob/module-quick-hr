@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS "Users" (
     "resetPasswordToken" VARCHAR(255),
     "resetPasswordTokenExpiry" TIMESTAMP,
     "lastLogin" TIMESTAMP,
+    "mustChangePassword" BOOLEAN DEFAULT false,
     "isActive" BOOLEAN DEFAULT true,
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -29,6 +30,32 @@ CREATE INDEX IF NOT EXISTS idx_users_verification_token ON "Users"("verification
 CREATE INDEX IF NOT EXISTS idx_users_reset_token ON "Users"("resetPasswordToken");
 CREATE INDEX IF NOT EXISTS idx_users_role ON "Users"(role);
 CREATE INDEX IF NOT EXISTS idx_users_active ON "Users"("isActive");
+
+-- Verifications Table (Email/Phone Verification)
+CREATE TABLE IF NOT EXISTS "Verifications" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" UUID NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('EMAIL', 'PHONE')),
+    token VARCHAR(255) NOT NULL,
+    "expiresAt" TIMESTAMP NOT NULL,
+    "verifiedAt" TIMESTAMP,
+    "attempts" INTEGER DEFAULT 0,
+    "metadata" JSONB,
+    "requestBody" JSONB,
+    "responseBody" JSONB,
+    "ipAddress" VARCHAR(45),
+    "userAgent" TEXT,
+    "status" VARCHAR(20) DEFAULT 'pending',
+    "providerMessageId" VARCHAR(255),
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_verification_user FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_verifications_user_id ON "Verifications"("userId");
+CREATE INDEX IF NOT EXISTS idx_verifications_token ON "Verifications"(token);
+CREATE INDEX IF NOT EXISTS idx_verifications_type ON "Verifications"(type);
 
 -- User Devices Table (Mobile Device Registration)
 CREATE TABLE IF NOT EXISTS "UserDevices" (
@@ -509,4 +536,8 @@ CREATE INDEX IF NOT EXISTS idx_menu_roles_role_key ON "MenuRoles"("roleKey");
 
 DROP TRIGGER IF EXISTS update_menus_updated_at ON "Menus";
 CREATE TRIGGER update_menus_updated_at BEFORE UPDATE ON "Menus"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_verifications_updated_at ON "Verifications";
+CREATE TRIGGER update_verifications_updated_at BEFORE UPDATE ON "Verifications"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

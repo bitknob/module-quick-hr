@@ -9,6 +9,7 @@ The Employee Documents Management API provides comprehensive document upload, st
 ## Overview
 
 The document management system supports:
+
 - Multiple document types (ID proof, address proof, PAN, Aadhaar, certificates, etc.)
 - Document upload to AWS S3
 - Document verification workflow with approval/rejection
@@ -36,6 +37,7 @@ Authorization: Bearer <access_token>
 ## Document Types
 
 The following document types are supported:
+
 - `id_proof` - Identity proof
 - `address_proof` - Address proof
 - `pan_card` - PAN card
@@ -66,6 +68,7 @@ The following document types are supported:
 - Word Documents: `.doc`, `.docx`
 
 **File Size Limits:**
+
 - Maximum file size: 2MB (before compression)
 - Files are automatically compressed before upload to optimize storage usage
 - After compression, files are typically 30-70% smaller
@@ -85,6 +88,7 @@ The following document types are supported:
 **Content-Type:** `multipart/form-data`
 
 **Form Data:**
+
 - `document` (file, required) - Document file to upload
 - `employeeId` (string, required) - Employee UUID
 - `companyId` (string, required) - Company UUID
@@ -94,6 +98,7 @@ The following document types are supported:
 - `notes` (string, optional) - Additional notes
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -107,7 +112,7 @@ The following document types are supported:
     "companyId": "company_uuid",
     "documentType": "pan_card",
     "documentName": "PAN Card",
-    "fileUrl": "https://storage.googleapis.com/...",
+    "fileUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/documents/pan_card.pdf",
     "fileName": "pan_card.pdf",
     "fileSize": 245678,
     "mimeType": "application/pdf",
@@ -122,6 +127,7 @@ The following document types are supported:
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/documents/upload \
   -H "Authorization: Bearer <access_token>" \
@@ -134,6 +140,7 @@ curl -X POST http://localhost:9400/api/documents/upload \
 ```
 
 **Error Responses:**
+
 - `400 Bad Request` - Invalid file type or file size exceeds 2MB
 - `404 Not Found` - Employee not found
 - `400 Bad Request` - Employee does not belong to the specified company
@@ -148,12 +155,15 @@ curl -X POST http://localhost:9400/api/documents/upload \
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `id` (string, required) - Document UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -167,7 +177,7 @@ curl -X POST http://localhost:9400/api/documents/upload \
     "companyId": "company_uuid",
     "documentType": "pan_card",
     "documentName": "PAN Card",
-    "fileUrl": "https://storage.googleapis.com/...",
+    "fileUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/documents/pan_card.pdf",
     "fileName": "pan_card.pdf",
     "fileSize": 245678,
     "mimeType": "application/pdf",
@@ -180,7 +190,7 @@ curl -X POST http://localhost:9400/api/documents/upload \
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "verifier": {
@@ -196,6 +206,7 @@ curl -X POST http://localhost:9400/api/documents/upload \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/documents/{document_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>"
@@ -211,12 +222,15 @@ curl -X GET http://localhost:9400/api/documents/{document_id}?companyId=company_
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `id` (string, required) - Document UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Request Body:**
+
 ```json
 {
   "documentName": "Updated PAN Card",
@@ -226,6 +240,7 @@ curl -X GET http://localhost:9400/api/documents/{document_id}?companyId=company_
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -244,6 +259,7 @@ curl -X GET http://localhost:9400/api/documents/{document_id}?companyId=company_
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/documents/{document_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>" \
@@ -255,6 +271,7 @@ curl -X PUT http://localhost:9400/api/documents/{document_id}?companyId=company_
 ```
 
 **Error Responses:**
+
 - `400 Bad Request` - Cannot update verified document
 
 ---
@@ -267,12 +284,15 @@ curl -X PUT http://localhost:9400/api/documents/{document_id}?companyId=company_
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `id` (string, required) - Document UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -285,12 +305,14 @@ curl -X PUT http://localhost:9400/api/documents/{document_id}?companyId=company_
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/documents/{document_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Deletes the document record and the file from AWS S3
 
 ---
@@ -304,12 +326,15 @@ curl -X DELETE http://localhost:9400/api/documents/{document_id}?companyId=compa
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
 
 **Path Parameters:**
+
 - `id` (string, required) - Document UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -328,15 +353,19 @@ curl -X DELETE http://localhost:9400/api/documents/{document_id}?companyId=compa
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/documents/{document_id}/verify?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `400 Bad Request` - Only pending documents can be verified
+- `403 Forbidden` - Insufficient permissions
 
 **Notes:**
+
 - The verifier is automatically set to the authenticated user
 
 ---
@@ -350,12 +379,15 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/verify?companyId=
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
 
 **Path Parameters:**
+
 - `id` (string, required) - Document UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Request Body:**
+
 ```json
 {
   "rejectionReason": "Document is unclear or incomplete"
@@ -363,6 +395,7 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/verify?companyId=
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -382,6 +415,7 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/verify?companyId=
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/documents/{document_id}/reject?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>" \
@@ -392,6 +426,7 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/reject?companyId=
 ```
 
 **Error Responses:**
+
 - `400 Bad Request` - Only pending documents can be rejected
 
 ---
@@ -404,14 +439,17 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/reject?companyId=
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `employeeId` (string, required) - Employee UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 - `documentType` (string, optional) - Filter by document type
 - `status` (string, optional) - Filter by status: `pending`, `verified`, `rejected`, `expired`
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -424,7 +462,7 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/reject?companyId=
       "id": "uuid",
       "documentType": "pan_card",
       "documentName": "PAN Card",
-      "fileUrl": "https://storage.googleapis.com/...",
+      "fileUrl": "https://quick-hr.s3.ap-south-1.amazonaws.com/documents/pan_card.pdf",
       "status": "verified",
       "verifiedAt": "2024-01-16T14:00:00.000Z",
       "verifier": {
@@ -439,6 +477,7 @@ curl -X POST http://localhost:9400/api/documents/{document_id}/reject?companyId=
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/documents/employee/{employee_id}?documentType=pan_card&status=verified" \
   -H "Authorization: Bearer <access_token>"
@@ -454,13 +493,21 @@ curl -X GET "http://localhost:9400/api/documents/employee/{employee_id}?document
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `companyId` (string, required) - Company UUID
 
 **Query Parameters:**
+
 - `documentType` (string, optional) - Filter by document type
 - `status` (string, optional) - Filter by status: `pending`, `verified`, `rejected`, `expired`
 
+**Access Control Note:**
+
+- **Privileged Users** (Admin/HR/Manager): Retrieve all documents for the company matching the filters.
+- **Regular Employees**: Retrieve only **their own** documents, regardless of the company ID provided. They must belong to the requested company to see any data.
+
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -487,6 +534,7 @@ curl -X GET "http://localhost:9400/api/documents/employee/{employee_id}?document
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/documents/company/{company_id}?status=pending" \
   -H "Authorization: Bearer <access_token>"
@@ -502,9 +550,11 @@ curl -X GET "http://localhost:9400/api/documents/company/{company_id}?status=pen
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `companyId` (string, required) - Company UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -531,12 +581,14 @@ curl -X GET "http://localhost:9400/api/documents/company/{company_id}?status=pen
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/documents/pending/{company_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Notes:**
+
 - Returns all pending documents for a company, sorted by creation date (oldest first)
 - Useful for managers/admins to see documents awaiting verification
 
@@ -550,6 +602,7 @@ curl -X GET http://localhost:9400/api/documents/pending/{company_id} \
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Filter by company
 - `employeeId` (string, optional) - Filter by employee
 - `documentType` (string, optional) - Filter by document type
@@ -557,7 +610,13 @@ curl -X GET http://localhost:9400/api/documents/pending/{company_id} \
 - `page` (number, optional) - Page number (default: 1)
 - `limit` (number, optional) - Items per page (default: 20)
 
+**Access Control Note:**
+
+- **Privileged Users** (Admin/HR/Manager): Can search all documents within their authorized scope (Company/System).
+- **Regular Employees**: Can only search and view **their own** documents. Filters for other employees will be ignored or result in empty lists depending on implementation safety.
+
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -590,8 +649,72 @@ curl -X GET http://localhost:9400/api/documents/pending/{company_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/documents/search?companyId=company_uuid&documentType=pan_card&status=verified&page=1&limit=20" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 11. Get All Documents (Role Based)
+
+**Method:** `GET`  
+**URL:** `/api/documents/all`  
+**Full URL:** `http://localhost:9400/api/documents/all?page=1&limit=20`  
+**Authentication:** Required
+
+**Query Parameters:**
+
+- `page` (number, optional) - Page number (default: 1)
+- `limit` (number, optional) - Items per page (default: 20)
+- `companyId` (string, optional) - Filter by company (Privileged users only)
+- `employeeId` (string, optional) - Filter by employee (Privileged users only)
+- `documentType` (string, optional) - Filter by document type
+- `status` (string, optional) - Filter by status
+
+**Access Control Behavior:**
+
+- **Super Admin / Provider Admin / HRBP:**
+  - Retrieves **ALL** documents across the system (or filtered by query params).
+  - Can see documents from any employee and any company.
+
+- **Employee:**
+  - Retrieves **ONLY** documents belonging to the logged-in user.
+  - Automatically filters by the employee's ID.
+  - Returns an empty list if the user has no employee record.
+
+**Response (200):**
+
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Documents retrieved successfully",
+    "responseDetail": "Total: 50, Page: 1, Limit: 20, Total Pages: 3"
+  },
+  "response": [
+    {
+      "id": "uuid",
+      "employeeId": "employee_uuid",
+      "documentType": "pan_card",
+      "documentName": "PAN Card",
+      "status": "verified",
+      "employee": {
+        "id": "employee_uuid",
+        "firstName": "John",
+        "lastName": "Doe",
+        "employeeId": "EMP001"
+      }
+    }
+  ]
+}
+```
+
+**cURL:**
+
+```bash
+curl -X GET "http://localhost:9400/api/documents/all" \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -600,11 +723,13 @@ curl -X GET "http://localhost:9400/api/documents/search?companyId=company_uuid&d
 ## File Storage
 
 Documents are stored in AWS S3 with the following structure:
+
 ```
 s3://quick-hr/documents/{unique_filename}
 ```
 
 Files are automatically made publicly accessible and a public URL is returned for direct access:
+
 ```
 https://quick-hr.s3.ap-south-1.amazonaws.com/documents/{unique_filename}
 ```
@@ -631,5 +756,5 @@ The Documents menu is available in the navigation with the following structure:
   - **All Documents** - View all company documents (admin roles)
 
 Additionally, under the **Employees** menu:
-- **Employee Documents** - Access employee document management (all roles)
 
+- **Employee Documents** - Access employee document management (all roles)

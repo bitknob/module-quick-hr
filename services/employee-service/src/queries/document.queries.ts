@@ -16,12 +16,12 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'verifier',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -51,7 +51,7 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'verifier',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -78,12 +78,12 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'verifier',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -101,7 +101,7 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
       order: [['createdAt', 'ASC']],
@@ -125,7 +125,7 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
       ],
     });
@@ -163,12 +163,12 @@ export class DocumentQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'verifier',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],

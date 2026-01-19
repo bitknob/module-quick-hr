@@ -13,3 +13,4 @@ export * from './middleware/auth';
 export * from './middleware/requestLogger';
 export * from './middleware/upload';
 export * from './utils/jwt';
+export * from './utils/email';

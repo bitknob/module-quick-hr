@@ -13,22 +13,24 @@ export interface CompanyAttributes {
   updatedAt?: Date;
 }
 
-export interface CompanyCreationAttributes
-  extends Optional<CompanyAttributes, 'id' | 'createdAt' | 'updatedAt' | 'status'> {}
+export interface CompanyCreationAttributes extends Optional<
+  CompanyAttributes,
+  'id' | 'createdAt' | 'updatedAt' | 'status'
+> {}
 
 export class Company
   extends Model<CompanyAttributes, CompanyCreationAttributes>
   implements CompanyAttributes
 {
-  public id!: string;
-  public name!: string;
-  public code!: string;
-  public description?: string;
-  public profileImageUrl?: string;
-  public hrbpId?: string;
-  public status!: 'active' | 'inactive';
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public id: string;
+  declare public name: string;
+  declare public code: string;
+  declare public description?: string;
+  declare public profileImageUrl?: string;
+  declare public hrbpId?: string;
+  declare public status: 'active' | 'inactive';
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 Company.init(
@@ -77,11 +79,6 @@ Company.init(
   {
     sequelize,
     tableName: 'Companies',
-    indexes: [
-      { fields: ['code'] },
-      { fields: ['status'] },
-      { fields: ['hrbpId'] },
-    ],
+    indexes: [{ fields: ['code'] }, { fields: ['status'] }, { fields: ['hrbpId'] }],
   }
 );
-

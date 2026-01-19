@@ -118,7 +118,7 @@ The following notification types are supported:
         "id": "employee_uuid",
         "firstName": "John",
         "lastName": "Doe",
-        "email": "john.doe@example.com",
+        "userCompEmail": "john.doe@example.com",
         "employeeId": "EMP001"
       },
       "company": {
@@ -239,7 +239,7 @@ curl -X POST http://localhost:9400/api/notifications/mark-all-read \
       "id": "employee_uuid",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com",
+      "userCompEmail": "john.doe@example.com",
       "employeeId": "EMP001"
     },
     "company": {

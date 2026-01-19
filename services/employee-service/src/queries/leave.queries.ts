@@ -16,12 +16,12 @@ export class LeaveQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -69,12 +69,12 @@ export class LeaveQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -123,12 +123,12 @@ export class LeaveQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],
@@ -153,7 +153,7 @@ export class LeaveQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId', 'managerId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId', 'managerId'],
         },
       ],
       order: [['startDate', 'ASC']],
@@ -260,12 +260,12 @@ export class LeaveQueries {
         {
           model: Employee,
           as: 'employee',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
         },
         {
           model: Employee,
           as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'employeeId'],
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail', 'employeeId'],
           required: false,
         },
       ],

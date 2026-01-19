@@ -11,6 +11,7 @@ import {
   getDocumentsByCompany,
   getPendingDocuments,
   searchDocuments,
+  getAllDocuments,
 } from '../controllers/document.controller';
 
 const { authenticate } = getAuthMiddleware();
@@ -21,6 +22,7 @@ router.use(authenticate);
 
 router.post('/upload', documentUploadMiddleware, uploadDocument);
 router.get('/search', searchDocuments);
+router.get('/all', getAllDocuments);
 router.get('/pending/:companyId', getPendingDocuments);
 router.get('/employee/:employeeId', getDocumentsByEmployee);
 router.get('/company/:companyId', getDocumentsByCompany);
@@ -31,4 +33,3 @@ router.put('/:id', updateDocument);
 router.delete('/:id', deleteDocument);
 
 export default router;
-

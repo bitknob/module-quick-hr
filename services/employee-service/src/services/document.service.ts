@@ -21,14 +21,20 @@ export class DocumentService {
     notes?: string;
     uploadedBy: string;
   }): Promise<EmployeeDocument> {
-    const employee = await EmployeeQueries.findById(data.employeeId, data.companyId);
-    if (!employee) {
-      throw new NotFoundError('Employee');
+    // First check if employee exists at all
+    const employeeExists = await EmployeeQueries.findById(data.employeeId);
+    if (!employeeExists) {
+      throw new NotFoundError(`Employee with ID ${data.employeeId}`);
     }
 
-    if (employee.companyId !== data.companyId) {
-      throw new ValidationError('Employee does not belong to the specified company');
+    // Then check if employee belongs to the specified company
+    if (employeeExists.companyId !== data.companyId) {
+      throw new ValidationError(
+        `Employee belongs to a different company. Employee's company ID: ${employeeExists.companyId}, Requested company ID: ${data.companyId}`
+      );
     }
+
+    const employee = employeeExists;
 
     // Limit file size to 2MB (client-side limit)
     // After compression, files will be smaller, allowing more files within AWS free tier (5GB storage limit)
@@ -52,11 +58,7 @@ export class DocumentService {
       );
     }
 
-    const uploadResult = await uploadDocumentToS3(
-      data.fileBuffer,
-      data.fileName,
-      data.mimeType
-    );
+    const uploadResult = await uploadDocumentToS3(data.fileBuffer, data.fileName, data.mimeType);
 
     // Use compressed size for storage tracking (actual size stored in S3)
     return await EmployeeDocument.create({
@@ -103,7 +105,7 @@ export class DocumentService {
     }
 
     await EmployeeDocument.update(data as any, { where: { id } });
-    return await DocumentQueries.findById(id, companyId) as EmployeeDocument;
+    return (await DocumentQueries.findById(id, companyId)) as EmployeeDocument;
   }
 
   static async deleteDocument(id: string, companyId?: string): Promise<void> {
@@ -116,7 +118,7 @@ export class DocumentService {
       // Track deletion with actual file size before deleting
       const { trackDeletion } = require('@hrm/common');
       trackDeletion(document.fileSize);
-      
+
       await deleteFromS3(document.fileUrl);
     } catch (error) {
       console.error('Failed to delete file from S3:', error);
@@ -153,7 +155,7 @@ export class DocumentService {
       { where: { id } }
     );
 
-    return await DocumentQueries.findById(id, companyId) as EmployeeDocument;
+    return (await DocumentQueries.findById(id, companyId)) as EmployeeDocument;
   }
 
   static async rejectDocument(
@@ -186,7 +188,7 @@ export class DocumentService {
       { where: { id } }
     );
 
-    return await DocumentQueries.findById(id, companyId) as EmployeeDocument;
+    return (await DocumentQueries.findById(id, companyId)) as EmployeeDocument;
   }
 
   static async getDocumentsByEmployee(
@@ -220,10 +222,7 @@ export class DocumentService {
     let count = 0;
 
     for (const doc of expiredDocuments) {
-      await EmployeeDocument.update(
-        { status: 'expired' },
-        { where: { id: doc.id } }
-      );
+      await EmployeeDocument.update({ status: 'expired' }, { where: { id: doc.id } });
       count++;
     }
 
@@ -243,4 +242,3 @@ export class DocumentService {
     return await DocumentQueries.searchDocuments(filters, page, limit);
   }
 }
-

@@ -30,13 +30,14 @@ const pool = new Pool({
 async function ensureDatabaseExists() {
   const adminClient = await adminPool.connect();
   try {
-    console.log(`Using database name: "${dbName}" (from ${process.env.DB_NAME ? 'DB_NAME env var' : 'default'})`);
-    console.log(`Checking if database "${dbName}" exists...`);
-    
-    const result = await adminClient.query(
-      'SELECT 1 FROM pg_database WHERE datname = $1',
-      [dbName]
+    console.log(
+      `Using database name: "${dbName}" (from ${process.env.DB_NAME ? 'DB_NAME env var' : 'default'})`
     );
+    console.log(`Checking if database "${dbName}" exists...`);
+
+    const result = await adminClient.query('SELECT 1 FROM pg_database WHERE datname = $1', [
+      dbName,
+    ]);
 
     if (result.rows.length === 0) {
       console.log(`Database "${dbName}" does not exist. Creating it...`);
@@ -57,19 +58,27 @@ async function migrate() {
   try {
     // First, ensure the database exists
     await ensureDatabaseExists();
-    
+
     // Now connect to the target database and run migrations
     const client = await pool.connect();
     try {
       console.log('Starting database migration...');
-      
-      const sql = fs.readFileSync(
-        path.join(__dirname, 'create-tables.sql'),
-        'utf8'
-      );
+
+      // Run base schema
+      const createTablesSql = fs.readFileSync(path.join(__dirname, 'create-tables.sql'), 'utf8');
 
       await client.query('BEGIN');
-      await client.query(sql);
+      await client.query(createTablesSql);
+      console.log('Base schema created/updated successfully!');
+
+      // Run mustChangePassword migration
+      const mustChangePasswordSql = fs.readFileSync(
+        path.join(__dirname, 'migrate-add-must-change-password.sql'),
+        'utf8'
+      );
+      await client.query(mustChangePasswordSql);
+      console.log('mustChangePassword column migration completed!');
+
       await client.query('COMMIT');
 
       console.log('Database migration completed successfully!');
@@ -90,4 +99,3 @@ async function migrate() {
 }
 
 migrate();
-

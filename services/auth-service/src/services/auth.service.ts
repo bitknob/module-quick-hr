@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { User } from '../models/User.model';
+import { Verification, VerificationType } from '../models/Verification.model';
 import {
   UserRole,
   ConflictError,
@@ -52,6 +53,9 @@ export class AuthService {
     password: string;
     phoneNumber?: string;
     role?: UserRole;
+    ipAddress?: string;
+    userAgent?: string;
+    requestBody?: any;
   }): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     logger.info(`Starting signup for email: ${data.email}`);
 
@@ -94,13 +98,37 @@ export class AuthService {
       mustChangePassword: false,
     });
 
+    // Remove sensitive data from request body before storing
+    const safeRequestBody = { ...data };
+    if (safeRequestBody.password) delete (safeRequestBody as any).password;
+
     // Send verification email asynchronously (non-blocking) if enabled
-    // Don't wait for email to be sent - user creation should complete regardless
     if (isEmailSendingEnabled()) {
-      this.sendVerificationEmail(user.email, verificationToken).catch((error) => {
-        logger.error('Failed to send verification email:', error);
-        // Email failure should not prevent user creation
+      // Create verification record
+      const verification = await Verification.create({
+        userId: user.id,
+        type: VerificationType.EMAIL,
+        token: verificationToken,
+        expiresAt: verificationTokenExpiry,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+        requestBody: safeRequestBody,
+        status: 'pending',
+        attempts: 0,
       });
+
+      this.sendVerificationEmail(user.email, verificationToken)
+        .then(async () => {
+          await verification.update({ status: 'sent', attempts: 1 });
+        })
+        .catch(async (error) => {
+          logger.error('Failed to send verification email:', error);
+          await verification.update({
+            status: 'failed',
+            errorMessage: error.message,
+            attempts: 1,
+          });
+        });
     } else {
       logger.info('Email sending is disabled - skipping verification email');
     }
@@ -191,7 +219,7 @@ export class AuthService {
     };
   }
 
-  static async verifyEmail(token: string): Promise<User> {
+  static async verifyEmail(token: string, ipAddress?: string, userAgent?: string): Promise<User> {
     const user = await User.findOne({
       where: {
         verificationToken: token,
@@ -199,6 +227,7 @@ export class AuthService {
     });
 
     if (!user) {
+      // Fallback: Check Verification table if not found in User
       throw new NotFoundError('Invalid verification token');
     }
 
@@ -207,14 +236,29 @@ export class AuthService {
     }
 
     user.emailVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpiry = undefined;
+    user.verificationToken = null as any; // Clear token
+    user.verificationTokenExpiry = null as any;
     await user.save();
+
+    // Mark audit record as verified
+    await Verification.update(
+      {
+        verifiedAt: new Date(),
+        status: 'verified',
+        ipAddress: ipAddress, // Capture who clicked the link
+        userAgent: userAgent,
+      },
+      { where: { token: token, type: VerificationType.EMAIL } }
+    );
 
     return user;
   }
 
-  static async resendVerificationEmail(email: string): Promise<void> {
+  static async resendVerificationEmail(
+    email: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<void> {
     const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (!user) {
       throw new NotFoundError('User not found');
@@ -230,12 +274,43 @@ export class AuthService {
       verificationTokenExpiry.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS
     );
 
+    // Update User model (Legacy support + single source of truth for "current" valid token)
     user.verificationToken = verificationToken;
     user.verificationTokenExpiry = verificationTokenExpiry;
     await user.save();
 
+    const userId = user.getDataValue('id') as string;
+    if (!userId) {
+      throw new Error('User ID is missing');
+    }
+
     if (isEmailSendingEnabled()) {
-      await this.sendVerificationEmail(user.email, verificationToken);
+      logger.info(`Creating verification record for user: ${userId}`);
+
+      // Create verification audit record
+      const verification = await Verification.create({
+        userId: userId,
+        type: VerificationType.EMAIL,
+        token: verificationToken,
+        expiresAt: verificationTokenExpiry,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        status: 'pending',
+        attempts: 0,
+      });
+
+      this.sendVerificationEmail(user.email, verificationToken)
+        .then(async () => {
+          await verification.update({ status: 'sent', attempts: 1 });
+        })
+        .catch(async (error) => {
+          logger.error('Failed to send verification email:', error);
+          await verification.update({
+            status: 'failed',
+            errorMessage: error.message,
+            attempts: 1,
+          });
+        });
     } else {
       logger.info('Email sending is disabled - skipping verification email resend');
     }
@@ -338,8 +413,8 @@ export class AuthService {
     }
 
     const verificationUrl = `${
-      process.env.FRONTEND_URL || 'http://localhost:3000'
-    }/verify-email?token=${token}`;
+      process.env.FRONTEND_URL || 'http://localhost:9400/api/auth/verify-email-page'
+    }?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -377,7 +452,7 @@ export class AuthService {
     }
 
     const resetUrl = `${
-      process.env.FRONTEND_URL || 'http://localhost:3000'
+      process.env.FRONTEND_URL || 'http://localhost:9420'
     }/reset-password?token=${token}`;
 
     await sendEmail({
