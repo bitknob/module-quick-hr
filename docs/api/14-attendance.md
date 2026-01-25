@@ -254,9 +254,14 @@ curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=co
 **Full URL:** `http://localhost:9400/api/attendance/checkin/{employee_id}/{company_id}`  
 **Authentication:** Required
 
+**Enhanced Features:**
+- **Automatic Company Detection:** If `companyId` is "undefined" or not provided, the system automatically finds the company ID from the employee record
+- **Smart Employee Lookup:** Supports finding employees by user ID (from Users table) or email address
+- **Company Email Support:** Works seamlessly with users who login using company email
+
 **Path Parameters:**
-- `employeeId` (string, required) - Employee UUID
-- `companyId` (string, required) - Company UUID
+- `employeeId` (string, required) - Employee UUID or user ID (from Users table)
+- `companyId` (string, optional) - Company UUID. If "undefined" or not provided, the system will automatically detect it from the employee record
 
 **Request Body (optional):**
 ```json
@@ -264,6 +269,13 @@ curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=co
   "checkInTime": "2024-01-15T09:00:00.000Z"
 }
 ```
+
+**Enhanced Employee Resolution:**
+
+The endpoint uses a smart resolution system:
+1. **Direct Employee Lookup:** First tries to find employee by the provided `employeeId`
+2. **User Email Lookup:** If not found, uses the current user's email to find the employee record
+3. **Company ID Detection:** Automatically extracts company ID from the found employee record
 
 **Response (201):**
 ```json
@@ -285,15 +297,44 @@ curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=co
 }
 ```
 
-**cURL:**
+**cURL - With Company ID:**
 ```bash
 curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/{company_id} \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json"
 ```
 
+**cURL - Automatic Company Detection:**
+```bash
+curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/undefined \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**cURL - Using User ID:**
+```bash
+curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
 **Error Responses:**
 - `409 Conflict` - Already checked in today
+- `400 Bad Request` - Company ID is required and could not be determined
+- `404 Not Found` - Employee not found
+
+**Use Cases:**
+
+1. **Traditional Check-in:** Provide both employee ID and company ID
+2. **Auto-Detection:** Use "undefined" for company ID to let the system find it automatically
+3. **User ID Check-in:** Use user ID (from JWT token) instead of employee ID for simplified integration
+
+**Notes:**
+- The automatic company detection is particularly useful for frontend applications that may not have the company ID readily available
+- When using user ID instead of employee ID, the system automatically resolves the correct employee record
+- This feature enhances compatibility with the company email login system
 
 ---
 

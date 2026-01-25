@@ -65,6 +65,30 @@ export class EmployeeQueries {
     });
   }
 
+  static async findByAnyEmail(email: string): Promise<Employee | null> {
+    return await Employee.findOne({
+      where: {
+        [Op.or]: [
+          { userEmail: email },
+          { userCompEmail: email },
+        ],
+      },
+      include: [
+        {
+          model: Company,
+          as: 'company',
+          attributes: ['id', 'name'],
+        },
+        {
+          model: Employee,
+          as: 'manager',
+          attributes: ['id', 'firstName', 'lastName', 'userCompEmail'],
+          required: false,
+        },
+      ],
+    });
+  }
+
   static async findDirectReports(managerId: string, companyId?: string): Promise<Employee[]> {
     const where: any = { managerId, status: 'active' };
     if (companyId) {
@@ -87,14 +111,14 @@ export class EmployeeQueries {
     const companyFilter = companyId ? 'AND e."companyId" = :companyId' : '';
     const query = `
       WITH RECURSIVE subordinates AS (
-        SELECT id, "managerId", "companyId", "firstName", "lastName", email, "jobTitle", department, status
+        SELECT id, "managerId", "companyId", "firstName", "lastName", "userEmail", "jobTitle", department, status
         FROM "Employees"
         WHERE "managerId" = :managerId AND status = 'active'
         ${companyId ? 'AND "companyId" = :companyId' : ''}
         
         UNION ALL
         
-        SELECT e.id, e."managerId", e."companyId", e."firstName", e."lastName", e.email, e."jobTitle", e.department, e.status
+        SELECT e.id, e."managerId", e."companyId", e."firstName", e."lastName", e."userEmail", e."jobTitle", e.department, e.status
         FROM "Employees" e
         INNER JOIN subordinates s ON e."managerId" = s.id
         WHERE e.status = 'active' ${companyFilter}
@@ -223,7 +247,7 @@ export class EmployeeQueries {
       where[Op.or] = [
         { firstName: { [Op.iLike]: `%${filters.searchTerm}%` } },
         { lastName: { [Op.iLike]: `%${filters.searchTerm}%` } },
-        { email: { [Op.iLike]: `%${filters.searchTerm}%` } },
+        { userEmail: { [Op.iLike]: `%${filters.searchTerm}%` } },
         { employeeId: { [Op.iLike]: `%${filters.searchTerm}%` } },
       ];
     }
@@ -281,5 +305,71 @@ export class EmployeeQueries {
 
   static async updateManager(employeeId: string, newManagerId: string | null): Promise<void> {
     await Employee.update({ managerId: newManagerId ?? undefined }, { where: { id: employeeId } });
+  }
+
+  static async getPotentialManagers(
+    employeeId: string,
+    companyId: string,
+    searchTerm?: string
+  ): Promise<Employee[]> {
+    // 1. Get all subordinates (recursive) of the current employee
+    // We cannot assign any of them as the manager because that would create a cycle
+    const query = `
+      WITH RECURSIVE subordinates AS (
+        SELECT id
+        FROM "Employees"
+        WHERE "managerId" = :employeeId
+        
+        UNION ALL
+        
+        SELECT e.id
+        FROM "Employees" e
+        INNER JOIN subordinates s ON e."managerId" = s.id
+      )
+      SELECT id FROM subordinates;
+    `;
+
+    const subordinates = (await sequelize.query(query, {
+      replacements: { employeeId },
+      type: QueryTypes.SELECT,
+    })) as { id: string }[];
+
+    const excludeIds = [employeeId, ...subordinates.map((s) => s.id)];
+
+    // 2. Find eligible employees:
+    // - Same company
+    // - Active status
+    // - Not in the exclude list
+    // - Matches search term (optional)
+    const where: any = {
+      companyId,
+      status: 'active',
+      id: { [Op.notIn]: excludeIds },
+    };
+
+    if (searchTerm) {
+      where[Op.or] = [
+        { firstName: { [Op.iLike]: `%${searchTerm}%` } },
+        { lastName: { [Op.iLike]: `%${searchTerm}%` } },
+        { userEmail: { [Op.iLike]: `%${searchTerm}%` } },
+        { userCompEmail: { [Op.iLike]: `%${searchTerm}%` } },
+        { employeeId: { [Op.iLike]: `%${searchTerm}%` } },
+      ];
+    }
+
+    return await Employee.findAll({
+      where,
+      attributes: [
+        'id',
+        'firstName',
+        'lastName',
+        'userCompEmail',
+        'userEmail',
+        'jobTitle',
+        'employeeId',
+      ],
+      limit: 20, // Limit results for performance
+      order: [['firstName', 'ASC']],
+    });
   }
 }

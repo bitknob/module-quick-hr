@@ -23,7 +23,7 @@ export const enrichEmployeeContext = async (
       return next();
     }
 
-    const employee = await EmployeeQueries.findByUserEmail(req.user.email);
+    const employee = await EmployeeQueries.findByAnyEmail(req.user.email);
     if (employee) {
       req.employee = {
         id: employee.id,

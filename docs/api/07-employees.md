@@ -13,9 +13,12 @@ All employee endpoints require authentication.
 **Full URL:** `http://localhost:9400/api/employees/me`  
 **Authentication:** Required
 
+**Enhanced Email Lookup:**
+The endpoint now supports finding employee records using either personal email (`userEmail`) or company email (`userCompEmail`). This allows users who login with company email to access their employee profile seamlessly.
+
 **Access Control:**
 
-- **Regular Users:** Returns the employee record associated with the authenticated user. Returns 404 if no employee record exists.
+- **Regular Users:** Returns the employee record associated with the authenticated user. The system automatically finds the employee record using either personal or company email.
 - **Super Admins / Provider Admins / Provider HR Staff:** If no employee record exists, returns user information indicating they are a Super Admin without an employee record (instead of 404).
 
 **Response (200) - With Employee Record:**
@@ -58,7 +61,7 @@ All employee endpoints require authentication.
     "responseDetail": ""
   },
   "response": {
-    "id": null,
+    "id": "user_uuid",
     "userEmail": "admin@quickhr.com",
     "email": "admin@quickhr.com",
     "role": "super_admin",
@@ -68,16 +71,23 @@ All employee endpoints require authentication.
 }
 ```
 
-**Response (404) - Regular User Without Employee Record:**
+**Response (200) - Regular User Without Employee Record:**
 
 ```json
 {
   "header": {
-    "responseCode": 404,
-    "responseMessage": "Employee not found",
-    "responseDetail": "Employee not found"
+    "responseCode": 200,
+    "responseMessage": "Employee profile not found",
+    "responseDetail": "Your employee profile has not been set up yet. Please contact your administrator."
   },
-  "response": null
+  "response": {
+    "id": "user_uuid",
+    "userEmail": "user@company.com",
+    "email": "user@company.com",
+    "role": "employee",
+    "hasEmployeeRecord": false,
+    "error": "Employee profile not found"
+  }
 }
 ```
 
@@ -88,11 +98,19 @@ curl -X GET http://localhost:9400/api/employees/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
+**Enhanced Features:**
+
+- **Smart Email Resolution:** Automatically finds employee records using either personal email or company email
+- **Consistent Response Format:** Always returns 200 status with clear indicators about employee record existence
+- **User-Friendly Error Messages:** Provides helpful guidance when employee records are not found
+- **JWT Token Compatibility:** Uses `userId` field from JWT token for proper user identification
+
 **Notes:**
 
 - Super Admins, Provider Admins, and Provider HR Staff can access this endpoint even without an employee record
 - The response for Super Admins without employee records includes `isSuperAdmin: true` and `hasEmployeeRecord: false` to help frontend applications adjust the UI accordingly
-- Regular users (employees, managers, etc.) will receive a 404 error if they don't have an employee record
+- Regular users (employees, managers, etc.) will receive a 200 response with `hasEmployeeRecord: false` if they don't have an employee record, allowing frontend applications to handle this gracefully
+- The enhanced email lookup ensures users who login with company email can still access their employee profile
 
 ---
 
@@ -310,10 +328,13 @@ if (data.header.responseCode === 200) {
 
 **Request Body:**
 
+**Request Body:**
+
 ```json
 {
   "userEmail": "jane.smith@example.com",
   "companyId": "company_uuid",
+  "companyName": "Acme Corp",
   "employeeId": "EMP002",
   "firstName": "Jane",
   "lastName": "Smith",
@@ -329,28 +350,64 @@ if (data.header.responseCode === 200) {
 }
 ```
 
-**Response (201):**
+**Response (201) - Success with User Account Created:**
 
 ```json
 {
   "header": {
     "responseCode": 201,
     "responseMessage": "Employee created successfully",
-    "responseDetail": ""
+    "responseDetail": "User account created. Employee must change password on first login."
   },
   "response": {
-    "id": "uuid",
-    "userEmail": "jane.smith@example.com",
-    "companyId": "company_uuid",
-    "employeeId": "EMP002",
-    "firstName": "Jane",
-    "lastName": "Smith",
-    "userCompEmail": "jane.smith@company.com",
-    "jobTitle": "Senior Developer",
-    "department": "Engineering",
-    "status": "active",
-    "createdAt": "2024-01-15T00:00:00.000Z",
-    "updatedAt": "2024-01-15T00:00:00.000Z"
+    "employee": {
+      "id": "uuid",
+      "userEmail": "jane.smith@example.com",
+      "companyId": "company_uuid",
+      "employeeId": "EMP002",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "userCompEmail": "jane.smith@company.com",
+      "jobTitle": "Senior Developer",
+      "department": "Engineering",
+      "status": "active",
+      "createdAt": "2024-01-15T00:00:00.000Z",
+      "updatedAt": "2024-01-15T00:00:00.000Z"
+    },
+    "userCredentials": {
+      "email": "jane.smith@example.com",
+      "temporaryPassword": "Xy9@mK2pL5qR",
+      "mustChangePassword": true
+    }
+  }
+}
+```
+
+**Response (201) - Success but User Account Already Exists:**
+
+```json
+{
+  "header": {
+    "responseCode": 201,
+    "responseMessage": "Employee created successfully",
+    "responseDetail": "Employee created. User account may already exist."
+  },
+  "response": {
+    "employee": {
+      "id": "uuid",
+      "userEmail": "jane.smith@example.com",
+      "companyId": "company_uuid",
+      "employeeId": "EMP002",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "userCompEmail": "jane.smith@company.com",
+      "jobTitle": "Senior Developer",
+      "department": "Engineering",
+      "status": "active",
+      "createdAt": "2024-01-15T00:00:00.000Z",
+      "updatedAt": "2024-01-15T00:00:00.000Z"
+    },
+    "userCredentials": null
   }
 }
 ```
@@ -364,6 +421,7 @@ curl -X POST http://localhost:9400/api/employees \
   -d '{
     "userEmail": "jane.smith@example.com",
     "companyId": "company_uuid",
+    "companyName": "Acme Corp",
     "employeeId": "EMP002",
     "firstName": "Jane",
     "lastName": "Smith",
@@ -373,6 +431,28 @@ curl -X POST http://localhost:9400/api/employees \
     "hireDate": "2024-01-15"
   }'
 ```
+
+**Important Notes:**
+
+- **Automatic User Account Creation:** When an employee is created, the system automatically creates a user account with a temporary password and sends a welcome email containing the company name and login credentials.
+- **Login Credentials:** The response includes `userCredentials` with the email and temporary password that the employee can use to login.
+- **First Login Password Change:** The `mustChangePassword` flag is set to `true`, requiring the employee to change their password on first login.
+- **Security:** The temporary password is randomly generated with 12 characters including uppercase, lowercase, numbers, and special characters.
+- **Existing Users:** If a user account already exists for the email, `userCredentials` will be `null` and the employee can use their existing credentials.
+- **Welcome Email:** If email service is enabled, the system automatically sends a welcome email to the user with their credentials and the company name.
+
+**Workflow:**
+
+1. Admin creates employee record via this API (providing `companyName`).
+2. System creates/checks user account:
+   - If new user: Creates account with temporary password and sends welcome email.
+   - If existing user: Links to existing account.
+3. System creates employee record in database.
+4. Response includes employee data and login credentials (if new user).
+5. Employee receives welcome email with credentials.
+6. Employee logs in with provided credentials.
+7. System detects `mustChangePassword: true` and prompts for password change.
+8. Employee sets their own password and can then access the system normally.
 
 ---
 
@@ -745,6 +825,137 @@ curl -X PUT http://localhost:9400/api/employees/{employee_id}/transfer \
   -d '{
     "newManagerId": "new_manager_uuid"
   }'
+```
+
+---
+
+### 13. Bulk Assign Manager
+
+**Method:** `POST`  
+**URL:** `/api/employees/bulk-assign-manager`  
+**Full URL:** `http://localhost:9400/api/employees/bulk-assign-manager`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
+
+**Description:**
+Assigns a manager to multiple employees simultaneously. The system validates hierarchy integrity to ensure no cycles are created (e.g., A reports to B, B reports to A).
+
+**Request Body:**
+
+```json
+{
+  "employeeIds": ["uuid_1", "uuid_2", "uuid_3"],
+  "newManagerId": "manager_uuid"
+}
+```
+
+**Request Body Parameters:**
+
+- `employeeIds` (array of strings, required) - List of Employee IDs to be assigned
+- `newManagerId` (string, required) - The ID of the manager to assign
+
+**Response (200) - Success:**
+
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "All employees assigned successfully",
+    "responseDetail": ""
+  },
+  "response": {
+    "successCount": 3
+  }
+}
+```
+
+**Response (200) - Partial Success:**
+
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Partial success in assigning managers",
+    "responseDetail": ""
+  },
+  "response": {
+    "successCount": 2,
+    "failureCount": 1,
+    "errors": [
+      {
+        "employeeId": "uuid_3",
+        "error": "Cannot assign manager: would create a cycle"
+      }
+    ]
+  }
+}
+```
+
+**cURL:**
+
+```bash
+curl -X POST http://localhost:9400/api/employees/bulk-assign-manager \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "employeeIds": ["uuid_1", "uuid_2"],
+    "newManagerId": "manager_uuid"
+  }'
+```
+
+---
+
+### 14. Get Potential Managers
+
+**Method:** `GET`  
+**URL:** `/api/employees/:id/potential-managers`  
+**Full URL:** `http://localhost:9400/api/employees/{employee_id}/potential-managers?searchTerm=John`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
+
+**Description:**
+Retrieves a list of eligible managers for a specific employee. It automatically filters out the employee themselves and all their subordinates (recursively) to prevent hierarchy cycles.
+
+**Query Parameters:**
+
+- `searchTerm` (string, optional) - Filter by name, email, or employee ID
+- `companyId` (string, optional) - Filter by company (for super/provider admins)
+
+**Response (200):**
+
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Potential managers retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "manager_uuid_1",
+      "firstName": "Alice",
+      "lastName": "Manager",
+      "email": "alice@company.com",
+      "jobTitle": "Engineering Manager",
+      "employeeId": "MGR001"
+    },
+    {
+      "id": "manager_uuid_2",
+      "firstName": "Bob",
+      "lastName": "Director",
+      "email": "bob@company.com",
+      "jobTitle": "Director of Engineering",
+      "employeeId": "DIR001"
+    }
+  ]
+}
+```
+
+**cURL:**
+
+```bash
+curl -X GET "http://localhost:9400/api/employees/{employee_id}/potential-managers?searchTerm=John" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ---

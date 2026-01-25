@@ -589,6 +589,7 @@ const createUserForEmployeeSchema = z.object({
   email: z.string().email('Invalid email address'),
   role: z.nativeEnum(UserRole).optional(),
   phoneNumber: z.string().optional(),
+  companyName: z.string().optional(),
 });
 
 /**
@@ -645,6 +646,56 @@ export const createUserForEmployee = async (
       'User account created successfully',
       'Employee must change password on first login',
       201
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(new ValidationError(error.errors[0].message));
+    }
+    next(error);
+  }
+};
+
+const resendCredentialsSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+/**
+ * Resend user credentials (reset password and email)
+ * Only admins can perform this action
+ */
+export const resendCredentials = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currentUserRole = (req as any).user?.role;
+
+    // Only admins can resend credentials
+    if (
+      ![
+        UserRole.SUPER_ADMIN,
+        UserRole.PROVIDER_ADMIN,
+        UserRole.PROVIDER_HR_STAFF,
+        UserRole.COMPANY_ADMIN,
+      ].includes(currentUserRole)
+    ) {
+      return next(new ValidationError('Insufficient permissions to resend credentials'));
+    }
+
+    const validatedData = resendCredentialsSchema.parse(req.body);
+
+    const result = await AuthService.resendUserCredentials(validatedData.email);
+
+    ResponseFormatter.success(
+      res,
+      {
+        temporaryPassword: result.temporaryPassword,
+        mustChangePassword: true,
+      },
+      'User credentials reset and resent successfully',
+      'Employee must change password on login',
+      200
     );
   } catch (error) {
     if (error instanceof z.ZodError) {

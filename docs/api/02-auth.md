@@ -87,7 +87,19 @@ curl -X POST http://localhost:9400/api/auth/signup \
 
 **Note:** All device fields are optional. If provided, the device will be automatically registered.
 
-**Response (200):**
+**Enhanced Login Features:**
+
+- **Company Email Login:** Users can login with their company email (`userCompEmail`) instead of personal email
+- **Auto-Account Creation:** If a user account doesn't exist but an employee record with the company email is found, the system automatically creates a user account
+- **Smart Email Detection:** The system automatically detects whether the provided email is a personal email or company email
+
+**Login Flow:**
+
+1. **Direct Login:** If user account exists with provided email → Login successful
+2. **Company Email Login:** If no user account found but employee exists with company email → Auto-create user account → Send credentials to personal email → Instruct user to login with company email
+3. **Failed Login:** If no user account or employee found → Authentication failed
+
+**Response (200) - Successful Login:**
 
 ```json
 {
@@ -116,7 +128,20 @@ curl -X POST http://localhost:9400/api/auth/signup \
 }
 ```
 
-**Note:** If `mustChangePassword` is `true`, the user must change their password before accessing other endpoints. This typically occurs when an admin creates an account with a temporary password.
+**Response (401) - Auto-Account Creation:**
+
+```json
+{
+  "header": {
+    "responseCode": 401,
+    "responseMessage": "User account created for company email user@company.com. Please check your personal email (personal@email.com) for credentials and login with your company email (user@company.com).",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**Note:** If `mustChangePassword` is `true`, the user must change their password before accessing other endpoints. This typically occurs when an admin creates an account with a temporary password or when auto-creating accounts from company email.
 
 **cURL:**
 
@@ -129,6 +154,17 @@ curl -X POST http://localhost:9400/api/auth/login \
     "deviceId": "unique-device-id-12345",
     "deviceType": "ios",
     "deviceName": "iPhone 14 Pro"
+  }'
+```
+
+**cURL - Company Email Login:**
+
+```bash
+curl -X POST http://localhost:9400/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@company.com",
+    "password": "SecurePass123!"
   }'
 ```
 
@@ -677,7 +713,7 @@ The API automatically filters menu items based on the authenticated user's role.
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `company_admin`
 
 **Description:**
-Create a user account for an employee with a system-generated temporary password. The employee will be required to change their password on first login. This endpoint is typically used when administrators onboard new employees.
+Create a user account for an employee with a system-generated temporary password. Notifies the user via email with their credentials and the company name. The employee will be required to change their password on first login. This endpoint is typically used when administrators onboard new employees.
 
 **Request Body:**
 
@@ -685,7 +721,8 @@ Create a user account for an employee with a system-generated temporary password
 {
   "email": "newemployee@company.com",
   "phoneNumber": "+1234567890",
-  "role": "employee"
+  "role": "employee",
+  "companyName": "Acme Corp"
 }
 ```
 
@@ -694,6 +731,7 @@ Create a user account for an employee with a system-generated temporary password
 - `email` (string, required) - Employee email address (must be unique)
 - `phoneNumber` (string, optional) - Employee phone number
 - `role` (string, optional) - User role. Default: `employee`. Options: `employee`, `manager`, `department_head`, `company_admin`, `hrbp`, `provider_hr_staff`, `provider_admin`, `super_admin`
+- `companyName` (string, optional) - Name of the company. If provided, the system sends a welcome email with credentials and this company name.
 
 **Response (201):**
 
@@ -719,11 +757,12 @@ Create a user account for an employee with a system-generated temporary password
 
 **Important Notes:**
 
-- The `temporaryPassword` is only returned once and should be securely communicated to the employee
-- The password is randomly generated with 12 characters including uppercase, lowercase, numbers, and special characters
-- The `mustChangePassword` flag is set to `true`, requiring the employee to change their password on first login
-- Only administrators can create user accounts for employees
-- Super admin and provider admin roles can only be created by super admins
+- The `temporaryPassword` is only returned once and should be securely communicated to the employee if email delivery fails.
+- The password is randomly generated with 12 characters including uppercase, lowercase, numbers, and special characters.
+- The `mustChangePassword` flag is set to `true`, requiring the employee to change their password on first login.
+- **Welcome Email:** The system automatically sends a welcome email to the user with their credentials and the provided `companyName`.
+- Only administrators can create user accounts for employees.
+- Super admin and provider admin roles can only be created by super admins.
 
 **Error Responses:**
 
@@ -762,22 +801,140 @@ curl -X POST http://localhost:9400/api/auth/create-user-for-employee \
   -d '{
     "email": "newemployee@company.com",
     "phoneNumber": "+1234567890",
-    "role": "employee"
+    "role": "employee",
+    "companyName": "Acme Corp"
   }'
 ```
 
 **Security Considerations:**
 
-- The temporary password should be transmitted securely to the employee (e.g., via secure email, SMS, or in-person)
-- The temporary password is only shown once in the API response
-- Employees must change their password on first login
-- The system enforces password complexity requirements when changing the password
+- The temporary password is included in the response and also sent to the user via welcome email.
+- The temporary password is only shown once in the API response.
+- Employees must change their password on first login.
+- The system enforces password complexity requirements when changing the password.
 
 **Workflow:**
 
-1. Admin calls this endpoint to create a user account
-2. System generates a secure temporary password
-3. Admin securely shares the temporary password with the employee
-4. Employee logs in with the temporary password
-5. System detects `mustChangePassword: true` and prompts for password change
-6. Employee sets a new password and can then access the system normally
+1. Admin calls this endpoint to create a user account (providing `companyName`).
+2. System generates a secure temporary password.
+3. System sends a welcome email to the user with the credentials and company name.
+4. Response includes the credentials (as a fallback).
+5. Employee logs in with the temporary password.
+6. System detects `mustChangePassword: true` and prompts for password change.
+7. Employee sets a new password and can then access the system normally.
+
+---
+
+## 12. Resend Credentials
+
+**Method:** `POST`  
+**URL:** `/api/auth/resend-credentials`  
+**Full URL:** `http://localhost:9400/api/auth/resend-credentials`  
+**Authentication:** Required  
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `company_admin`
+
+**Description:**
+Resets a user's password to a system-generated temporary password and resends the welcome email with the new credentials. This is useful when an employee loses their initial login details or the initial email failed to deliver. The user will be required to change their password on the next login.
+
+**Security Enhancement:** The system now automatically fetches the company name from the employee record instead of accepting it from the request body, preventing potential security vulnerabilities.
+
+**Request Body:**
+
+```json
+{
+  "email": "employee@company.com"
+}
+```
+
+**Request Body Parameters:**
+
+- `email` (string, required) - Email address of the user to reset credentials for. Can be either personal email or company email.
+
+**Enhanced Features:**
+
+- **Automatic Company Detection:** The system automatically finds the employee record and fetches the associated company name
+- **Smart Email Resolution:** Works with both personal email (`userEmail`) and company email (`userCompEmail`)
+- **Secure Email Content:** The welcome email displays the company email for login credentials instead of personal email
+
+**Response (200):**
+
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "User credentials reset and resent successfully",
+    "responseDetail": "Employee must change password on login"
+  },
+  "response": {
+    "temporaryPassword": "NewTempPass123!",
+    "mustChangePassword": true
+  }
+}
+```
+
+**Important Notes:**
+
+- **Destructive Action:** This immediately invalidates the user's current password.
+- **Email Delivery:** The system attempts to send an email with the new credentials to the user's personal email.
+- **Company Email in Credentials:** The email sent shows the company email (for login) instead of personal email.
+- **Fallback:** The new temporary password is returned in the API response so the admin can manually share it if email delivery fails.
+- **Security:** The password is randomly generated and complex.
+- **Forced Change:** The `mustChangePassword` flag is set to `true`.
+
+**Email Content:**
+
+The welcome email sent to the user contains:
+- **Company Email:** The email used for login (company email)
+- **Temporary Password:** System-generated secure password
+- **Company Name:** Automatically fetched from employee record
+- **Login Instructions:** Directs user to change password on first login
+
+**Error Responses:**
+
+**404 - User Not Found:**
+
+```json
+{
+  "header": {
+    "responseCode": 404,
+    "responseMessage": "User not found",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**404 - Employee Not Found:**
+
+```json
+{
+  "header": {
+    "responseCode": 404,
+    "responseMessage": "Employee record not found for this email",
+    "responseDetail": ""
+  },
+  "response": null
+}
+```
+
+**cURL:**
+
+```bash
+curl -X POST http://localhost:9400/api/auth/resend-credentials \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "employee@company.com"
+  }'
+```
+
+**cURL - Using Personal Email:**
+
+```bash
+curl -X POST http://localhost:9400/api/auth/resend-credentials \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "personal@email.com"
+  }'
+```

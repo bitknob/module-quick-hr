@@ -1,7 +1,8 @@
 import { Employee } from '../models/Employee.model';
 import { EmployeeQueries } from '../queries/employee.queries';
-import { ConflictError, NotFoundError, ValidationError } from '@hrm/common';
+import { ConflictError, NotFoundError, ValidationError, UserRole } from '@hrm/common';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 export class EmployeeService {
   static async createEmployee(data: {
@@ -43,6 +44,10 @@ export class EmployeeService {
     const normalizedData = {
       ...data,
       managerId: data.managerId && data.managerId.trim() !== '' ? data.managerId : undefined,
+      dateOfBirth:
+        data.dateOfBirth && data.dateOfBirth.toString().trim() !== ''
+          ? data.dateOfBirth
+          : undefined,
     };
 
     if (normalizedData.managerId) {
@@ -84,6 +89,14 @@ export class EmployeeService {
 
   static async getEmployeeByUserEmail(userEmail: string): Promise<Employee> {
     const employee = await EmployeeQueries.findByUserEmail(userEmail);
+    if (!employee) {
+      throw new NotFoundError('Employee');
+    }
+    return employee;
+  }
+
+  static async getEmployeeByAnyEmail(email: string): Promise<Employee> {
+    const employee = await EmployeeQueries.findByAnyEmail(email);
     if (!employee) {
       throw new NotFoundError('Employee');
     }
@@ -231,5 +244,127 @@ export class EmployeeService {
 
     await EmployeeQueries.updateManager(employeeId, newManagerId);
     return (await EmployeeQueries.findById(employeeId)) as Employee;
+  }
+
+  /**
+   * Create a user account for an employee with a temporary password
+   * Calls the auth service to create the user account
+   * @param data - Employee user data
+   * @returns Object with email and temporary password
+   */
+  static async createUserAccountForEmployee(
+    data: {
+      email: string;
+      role?: UserRole;
+      phoneNumber?: string;
+      companyName?: string;
+    },
+    authToken?: string
+  ): Promise<{ email: string; temporaryPassword: string }> {
+    const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:9400';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (authToken) {
+      headers['Authorization'] = authToken;
+    }
+
+    try {
+      const response = await axios.post(
+        `${authServiceUrl}/api/auth/create-user-for-employee`,
+        {
+          email: data.email,
+          role: data.role || UserRole.EMPLOYEE,
+          phoneNumber: data.phoneNumber,
+          companyName: data.companyName,
+        },
+        {
+          headers,
+          timeout: 10000, // 10 second timeout
+        }
+      );
+
+      if (response.data?.response?.temporaryPassword) {
+        return {
+          email: data.email,
+          temporaryPassword: response.data.response.temporaryPassword,
+        };
+      }
+
+      throw new Error('Failed to retrieve temporary password from auth service');
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        throw new Error('User account already exists');
+      }
+      if (error.response?.data?.header?.responseMessage) {
+        throw new Error(error.response.data.header.responseMessage);
+      }
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }
+
+  static async bulkAssignManager(
+    employeeIds: string[],
+    newManagerId: string
+  ): Promise<{ successCount: number; failureCount: number; errors: any[] }> {
+    let successCount = 0;
+    let failureCount = 0;
+    const errors: any[] = [];
+
+    // Check if manager exists
+    const manager = await EmployeeQueries.findById(newManagerId);
+    if (!manager) {
+      throw new NotFoundError('Manager not found');
+    }
+
+    // Process each employee
+    for (const employeeId of employeeIds) {
+      try {
+        // Validate basic rules
+        if (employeeId === newManagerId) {
+          throw new ValidationError('Employee cannot be their own manager');
+        }
+
+        const employee = await EmployeeQueries.findById(employeeId);
+        if (!employee) {
+          throw new NotFoundError(`Employee ${employeeId} not found`);
+        }
+
+        if (employee.companyId !== manager.companyId) {
+          throw new ValidationError('Manager must be from the same company');
+        }
+
+        // Check for cycle
+        const hasCycle = await EmployeeQueries.checkCycle(employeeId, newManagerId);
+        if (hasCycle) {
+          throw new ValidationError('Cannot assign manager: would create a cycle');
+        }
+
+        // Perform update
+        await EmployeeQueries.updateManager(employeeId, newManagerId);
+        successCount++;
+      } catch (error: any) {
+        failureCount++;
+        errors.push({
+          employeeId,
+          error: error.message,
+        });
+      }
+    }
+
+    return { successCount, failureCount, errors };
+  }
+
+  static async getPotentialManagers(
+    employeeId: string,
+    companyId: string,
+    searchTerm?: string
+  ): Promise<Employee[]> {
+    return await EmployeeQueries.getPotentialManagers(employeeId, companyId, searchTerm);
   }
 }

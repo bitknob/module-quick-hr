@@ -222,7 +222,16 @@ export const getAttendanceByEmployee = async (
       // Try to find by userEmail (check if it's an email format)
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailRegex.test(employeeId)) {
-        employee = await EmployeeQueries.findByUserEmail(employeeId);
+        employee = await EmployeeQueries.findByAnyEmail(employeeId);
+        if (employee) {
+          actualEmployeeId = employee.id;
+        }
+      }
+
+      // If still not found, check if this is the current user requesting their own data
+      // by using their user email to find the employee record
+      if (!employee && req.user?.email) {
+        employee = await EmployeeQueries.findByAnyEmail(req.user.email);
         if (employee) {
           actualEmployeeId = employee.id;
         }
@@ -354,16 +363,43 @@ export const checkIn = async (
     if (!employeeId || employeeId === 'undefined') {
       return next(new ValidationError('Employee ID is required'));
     }
-    if (!companyId || companyId === 'undefined') {
-      return next(new ValidationError('Company ID is required'));
+
+    // Handle optional companyId - if not provided, try to find from employee context
+    let actualCompanyId = companyId;
+    if (!actualCompanyId || actualCompanyId === 'undefined') {
+      // Try to find employee and get their company ID
+      let employee = await EmployeeQueries.findById(employeeId);
+      
+      if (!employee) {
+        // Try to find by user email (current user)
+        if (req.user?.email) {
+          employee = await EmployeeQueries.findByAnyEmail(req.user.email);
+        }
+      }
+      
+      if (employee) {
+        actualCompanyId = employee.companyId;
+      } else {
+        return next(new ValidationError('Company ID is required and could not be determined'));
+      }
     }
 
     const checkInTime = req.body.checkInTime ? new Date(req.body.checkInTime) : undefined;
 
-    // At this point, employeeId and companyId are guaranteed to be strings (not undefined)
+    // Find the actual employee ID if we used user email to find employee
+    let actualEmployeeId = employeeId;
+    let employee = await EmployeeQueries.findById(employeeId);
+    
+    if (!employee && req.user?.email) {
+      employee = await EmployeeQueries.findByAnyEmail(req.user.email);
+      if (employee) {
+        actualEmployeeId = employee.id;
+      }
+    }
+
     const attendance = await AttendanceService.checkIn(
-      employeeId as string,
-      companyId as string,
+      actualEmployeeId,
+      actualCompanyId,
       checkInTime
     );
     const attendanceData = attendance.toJSON ? attendance.toJSON() : attendance;

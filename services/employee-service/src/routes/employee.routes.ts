@@ -12,9 +12,15 @@ import {
   transferEmployee,
   getCurrentEmployeeDocuments,
   getCurrentEmployeeDetails,
+  bulkAssignManager,
+  getPotentialManagers,
 } from '../controllers/employee.controller';
 import { getAuthMiddleware, UserRole } from '@hrm/common';
-import { enrichEmployeeContext, checkCompanyAccess, checkEmployeeAccess } from '../middleware/accessControl';
+import {
+  enrichEmployeeContext,
+  checkCompanyAccess,
+  checkEmployeeAccess,
+} from '../middleware/accessControl';
 
 const { authenticate, authorize } = getAuthMiddleware();
 
@@ -66,6 +72,32 @@ router.put(
   ),
   transferEmployee
 );
+
+router.post(
+  '/bulk-assign-manager',
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.HRBP,
+    UserRole.COMPANY_ADMIN
+  ),
+  bulkAssignManager
+);
+
+router.get(
+  '/:id/potential-managers',
+  checkEmployeeAccess(),
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.HRBP,
+    UserRole.COMPANY_ADMIN
+  ),
+  getPotentialManagers
+);
+
 router.delete(
   '/:id',
   checkEmployeeAccess(),
@@ -74,4 +106,3 @@ router.delete(
 );
 
 export default router;
-

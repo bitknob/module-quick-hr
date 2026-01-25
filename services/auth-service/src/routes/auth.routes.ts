@@ -14,6 +14,7 @@ import {
   getUserRole,
   getUserRoleByEmail,
   createUserForEmployee,
+  resendCredentials,
 } from '../controllers/auth.controller';
 import { getMenu } from '../controllers/menu.controller';
 import { authenticate, authorize } from '../middleware/auth';
@@ -55,6 +56,18 @@ router.post(
     UserRole.COMPANY_ADMIN
   ),
   createUserForEmployee
+);
+
+// Resend credentials (reset password and email)
+router.post(
+  '/resend-credentials',
+  authorize(
+    UserRole.SUPER_ADMIN,
+    UserRole.PROVIDER_ADMIN,
+    UserRole.PROVIDER_HR_STAFF,
+    UserRole.COMPANY_ADMIN
+  ),
+  resendCredentials
 );
 
 export default router;

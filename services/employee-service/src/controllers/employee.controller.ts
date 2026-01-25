@@ -34,8 +34,60 @@ export const createEmployee = async (
       req.body.companyId = userCompanyId;
     }
 
+    // STEP 1: Create user account FIRST with temporary password
+    let userCredentials = null;
+    try {
+      const userCreationResult = await EmployeeService.createUserAccountForEmployee(
+        {
+          email: req.body.userEmail,
+          role: UserRole.EMPLOYEE,
+          phoneNumber: req.body.phoneNumber,
+          companyName: req.body.companyName,
+        },
+        req.headers.authorization
+      );
+
+      userCredentials = {
+        email: userCreationResult.email,
+        temporaryPassword: userCreationResult.temporaryPassword,
+        mustChangePassword: true,
+      };
+
+      logger.info(`User account created for employee: ${req.body.userEmail}`);
+    } catch (userError: any) {
+      // If user creation fails, don't proceed with employee creation
+      logger.error(`Failed to create user account for employee: ${userError.message}`);
+
+      // If user already exists, that's okay - continue with employee creation
+      if (!userError.message?.includes('already exists')) {
+        // For other errors, fail the entire operation
+        return ResponseFormatter.error(
+          res,
+          'Failed to create user account',
+          userError.message,
+          400
+        );
+      }
+      logger.info(
+        `User account already exists for: ${req.body.userEmail}, proceeding with employee creation`
+      );
+    }
+
+    // STEP 2: Create employee record AFTER user account is created
     const employee = await EmployeeService.createEmployee(req.body);
-    ResponseFormatter.success(res, employee, 'Employee created successfully', '', 201);
+
+    ResponseFormatter.success(
+      res,
+      {
+        employee,
+        userCredentials,
+      },
+      'Employee created successfully',
+      userCredentials
+        ? 'User account created. Employee must change password on first login.'
+        : 'Employee created. User account may already exist.',
+      201
+    );
   } catch (error) {
     next(error);
   }
@@ -90,7 +142,7 @@ export const getCurrentEmployee = async (
 
   // Try to get employee record
   try {
-    const employee = await EmployeeService.getEmployeeByUserEmail(req.user.email);
+    const employee = await EmployeeService.getEmployeeByAnyEmail(req.user.email);
     ResponseFormatter.success(res, employee, 'Current employee retrieved successfully');
     return;
   } catch (error: any) {
@@ -109,7 +161,7 @@ export const getCurrentEmployee = async (
         ResponseFormatter.success(
           res,
           {
-            id: req.user.uid,
+            id: req.user.userId,
             userEmail: req.user.email,
             email: req.user.email,
             role: req.user.role,
@@ -125,7 +177,7 @@ export const getCurrentEmployee = async (
         ResponseFormatter.success(
           res,
           {
-            id: req.user.uid,
+            id: req.user.userId,
             userEmail: req.user.email,
             email: req.user.email,
             role: req.user.role,
@@ -362,6 +414,85 @@ export const getCurrentEmployeeDetails = async (
       );
       return;
     }
+    next(error);
+  }
+};
+
+export const bulkAssignManager = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { newManagerId, employeeIds } = req.body;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    if (!AccessControl.canAccessAllCompanies(userRole) && !userCompanyId) {
+      return ResponseFormatter.error(res, 'Company context required', '', 403);
+    }
+
+    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return next(new ValidationError('employeeIds must be a non-empty array'));
+    }
+
+    if (!newManagerId) {
+      return next(new ValidationError('newManagerId is required'));
+    }
+
+    const { successCount, failureCount, errors } = await EmployeeService.bulkAssignManager(
+      employeeIds,
+      newManagerId
+    );
+
+    if (failureCount === 0) {
+      ResponseFormatter.success(res, { successCount }, 'All employees assigned successfully');
+    } else if (successCount === 0) {
+      ResponseFormatter.error(res, 'Failed to assign any employees', JSON.stringify(errors), 400);
+    } else {
+      ResponseFormatter.success(
+        res,
+        { successCount, failureCount, errors },
+        'Partial success in assigning managers'
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPotentialManagers = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { searchTerm } = req.query;
+    const userRole = req.user?.role as UserRole;
+    const userCompanyId = req.employee?.companyId;
+
+    let companyId = AccessControl.canAccessAllCompanies(userRole)
+      ? (req.query.companyId as string)
+      : userCompanyId;
+
+    // If company ID is not provided (e.g. super admin), infer it from the target employee
+    if (!companyId) {
+      const employee = await EmployeeService.getEmployeeById(id);
+      companyId = employee.companyId;
+    }
+
+    if (!companyId) {
+      return ResponseFormatter.error(res, 'Company ID required', '', 400);
+    }
+
+    const eligibleManagers = await EmployeeService.getPotentialManagers(
+      id,
+      companyId,
+      searchTerm as string
+    );
+    ResponseFormatter.success(res, eligibleManagers, 'Potential managers retrieved successfully');
+  } catch (error) {
     next(error);
   }
 };

@@ -11,7 +11,7 @@ import {
   logger,
 } from '@hrm/common';
 import { generateAccessToken, generateRefreshToken, JWTPayload } from '../config/jwt';
-import { sendEmail } from '../config/email';
+import { sendServiceEmail as sendAuthEmail } from '../config/email';
 import { v4 as uuidv4 } from 'uuid';
 import { sequelize } from '../config/database';
 import { QueryTypes } from 'sequelize';
@@ -156,7 +156,7 @@ export class AuthService {
     email: string,
     password: string
   ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
-    // Use raw SQL query to avoid Sequelize issues
+    // First try to find user by the provided email (could be personal or company)
     const [users] = (await sequelize.query(
       'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber", "mustChangePassword" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
       {
@@ -165,22 +165,95 @@ export class AuthService {
       }
     )) as any[];
 
+    // If no user found, check if this is a company email for an existing employee
     if (!users) {
+      console.log('No user found, checking if employee exists with company email:', email);
+      
+      const [employee] = (await sequelize.query(
+        `SELECT e."userEmail", e."firstName", e."lastName", e."companyId", c.name as "companyName"
+         FROM "Employees" e
+         INNER JOIN "Companies" c ON e."companyId" = c.id
+         WHERE LOWER(e."userCompEmail") = LOWER(:email)
+         LIMIT 1`,
+        {
+          replacements: { email },
+          type: QueryTypes.SELECT,
+        }
+      )) as any[];
+
+      if (employee) {
+        console.log('Found employee with company email, creating user account for company email login');
+        
+        // Create user account for the employee using COMPANY EMAIL as login email
+        const temporaryPassword = this.generateTemporaryPassword();
+        const hashedPassword = await this.hashPassword(temporaryPassword);
+        const userId = uuidv4();
+        const verificationToken = uuidv4();
+        const verificationTokenExpiry = new Date();
+        verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + 24);
+
+        try {
+          await sequelize.query(
+            `INSERT INTO "Users" ("id", "email", "password", "role", "emailVerified", "isActive", "mustChangePassword", "verificationToken", "verificationTokenExpiry", "createdAt", "updatedAt")
+             VALUES (:id, :email, :password, :role, :emailVerified, :isActive, :mustChangePassword, :verificationToken, :verificationTokenExpiry, NOW(), NOW())`,
+            {
+              replacements: {
+                id: userId,
+                email: email, // Use company email as login email
+                password: hashedPassword,
+                role: 'employee',
+                emailVerified: true,
+                isActive: true,
+                mustChangePassword: true,
+                verificationToken,
+                verificationTokenExpiry,
+              },
+              type: QueryTypes.INSERT,
+            }
+          );
+        } catch (error) {
+          console.error('Error creating user:', error);
+          throw new UnauthorizedError('Failed to create user account');
+        }
+
+        console.log('User account created for company email login. Temporary password:', temporaryPassword);
+
+        // Send email with credentials to personal email but login with company email
+        try {
+          await this.sendEmployeeWelcomeEmail(
+            employee.userEmail, // Send to personal email
+            temporaryPassword,
+            employee.companyName || 'HRM System',
+            email // Show company email in the email body
+          );
+        } catch (emailError) {
+          console.error('Failed to send credentials email:', emailError);
+        }
+
+        throw new UnauthorizedError(`User account created for company email ${email}. Please check your personal email (${employee.userEmail}) for credentials and login with your company email (${email}).`);
+      }
+      
       throw new UnauthorizedError('Invalid email or password');
     }
 
     const userData = users as any;
+    console.log('User data:', { ...userData, password: userData.password ? '[HASHED]' : 'NULL' });
 
     if (!userData.password) {
+      console.log('User has no password set');
       throw new UnauthorizedError('Invalid email or password');
     }
 
     if (userData.isActive === false) {
+      console.log('User account is deactivated');
       throw new UnauthorizedError('Account is deactivated');
     }
 
     const isPasswordValid = await this.comparePassword(password, userData.password);
+    console.log('Password validation result:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('Password comparison failed');
       throw new UnauthorizedError('Invalid email or password');
     }
 
@@ -227,7 +300,30 @@ export class AuthService {
     });
 
     if (!user) {
-      // Fallback: Check Verification table if not found in User
+      // Fallback: Check Verification table if not found in User (audit trail)
+      const verification = await Verification.findOne({
+        where: { token, type: VerificationType.EMAIL },
+      });
+
+      if (verification) {
+        if (verification.status === 'verified' || verification.verifiedAt) {
+          // If the token exists and is already verified, we return the user if we can find them
+          // Otherwise produced "Email already verified" error which is better than "Invalid token"
+          const verifiedUser = await User.findByPk(verification.userId);
+          if (verifiedUser) {
+            // Check if user is actually verified
+            if (verifiedUser.emailVerified) {
+              return verifiedUser;
+            }
+          }
+          throw new ValidationError('Email already verified');
+        }
+
+        if (verification.expiresAt < new Date()) {
+          throw new ValidationError('Verification token has expired');
+        }
+      }
+
       throw new NotFoundError('Invalid verification token');
     }
 
@@ -264,8 +360,31 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
+    const validEmail = user.email || email;
+
     if (user.emailVerified) {
+      // If user must change password (e.g. employee created by admin), allow resending "verification"
+      // which is actually an activation/password reset link in this context
+      if (user.mustChangePassword) {
+        logger.info(
+          `Resending activation/password reset email for user: ${email} (mustChangePassword=true)`
+        );
+        await this.forgotPassword(email);
+        return;
+      }
       throw new ValidationError('Email already verified');
+    }
+
+    // Special handling for users who must change password (likely created by admin)
+    // even if email is NOT verified yet. We want to send them the activation flow.
+    if (user.mustChangePassword) {
+      logger.info(
+        `Sending activation/password reset email for unverified user: ${email} (mustChangePassword=true)`
+      );
+      // We'll treat this as a forgot password flow so they can set their password
+      // This will also effectively verify their email when they click the link (if we implemented that logic, but standard reset is fine)
+      await this.forgotPassword(email);
+      return;
     }
 
     const verificationToken = this.generateVerificationToken();
@@ -295,11 +414,12 @@ export class AuthService {
         expiresAt: verificationTokenExpiry,
         ipAddress: ipAddress,
         userAgent: userAgent,
+        requestBody: null,
         status: 'pending',
         attempts: 0,
       });
 
-      this.sendVerificationEmail(user.email, verificationToken)
+      this.sendVerificationEmail(validEmail, verificationToken)
         .then(async () => {
           await verification.update({ status: 'sent', attempts: 1 });
         })
@@ -331,7 +451,7 @@ export class AuthService {
     await user.save();
 
     if (isEmailSendingEnabled()) {
-      await this.sendPasswordResetEmail(user.email, resetToken);
+      await this.sendPasswordResetEmail(user.email || email, resetToken);
     } else {
       logger.info('Email sending is disabled - skipping password reset email');
     }
@@ -412,12 +532,17 @@ export class AuthService {
       return;
     }
 
+    if (!email) {
+      logger.error('Cannot send verification email: email address is missing');
+      return;
+    }
+
     const verificationUrl = `${
       process.env.FRONTEND_URL || 'http://localhost:9400/api/auth/verify-email-page'
     }?token=${token}`;
 
-    await sendEmail({
-      to: email,
+    await sendAuthEmail({
+      to: email.trim(),
       subject: 'Verify Your Email Address',
       html: `
         <!DOCTYPE html>
@@ -451,12 +576,17 @@ export class AuthService {
       return;
     }
 
+    if (!email) {
+      logger.error('Cannot send password reset email: email address is missing');
+      return;
+    }
+
     const resetUrl = `${
       process.env.FRONTEND_URL || 'http://localhost:9420'
     }/reset-password?token=${token}`;
 
-    await sendEmail({
-      to: email,
+    await sendAuthEmail({
+      to: email.trim(),
       subject: 'Reset Your Password',
       html: `
         <!DOCTYPE html>
@@ -691,6 +821,7 @@ export class AuthService {
     email: string;
     role?: UserRole;
     phoneNumber?: string;
+    companyName?: string;
   }): Promise<{ user: User; temporaryPassword: string }> {
     logger.info(`Creating user account for employee: ${data.email}`);
 
@@ -727,6 +858,21 @@ export class AuthService {
 
     logger.info(`User account created for employee: ${data.email} with temporary password`);
 
+    // Send welcome email with credentials
+    if (isEmailSendingEnabled()) {
+      try {
+        await this.sendEmployeeWelcomeEmail(
+          data.email,
+          temporaryPassword,
+          data.companyName || 'HRM System',
+          data.email // Use personal email as company email for now
+        );
+      } catch (emailError) {
+        logger.error(`Failed to send welcome email to ${data.email}:`, emailError);
+        // Do not throw; return credentials so admin can still share them manually
+      }
+    }
+
     // Convert Sequelize model to plain object
     const userPlain = user.get({ plain: true });
 
@@ -734,5 +880,128 @@ export class AuthService {
       user: userPlain as User,
       temporaryPassword,
     };
+  }
+
+  private static async sendEmployeeWelcomeEmail(
+    email: string,
+    tempPassword: string,
+    companyName: string,
+    companyEmail: string
+  ): Promise<void> {
+    if (!isEmailSendingEnabled()) {
+      logger.info('Email sending is disabled - skipping employee welcome email');
+      return;
+    }
+
+    const loginUrl = process.env.FRONTEND_URL || 'http://localhost:9420/login';
+
+    await sendAuthEmail({
+      to: (email || '').trim(),
+      subject: `Welcome to ${companyName} - Your Account Details`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
+              <h2 style="color: #ffffff; margin: 0;">Welcome to ${companyName}</h2>
+            </div>
+            <div style="padding: 30px;">
+              <p>Hello,</p>
+              <p>Your account for <strong>${companyName}</strong> has been successfully created. Here are your login credentials:</p>
+              
+              <div style="background-color: #f0f7fa; border-left: 4px solid #3498db; padding: 15px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${companyEmail}</p>
+                <p style="margin: 5px 0;"><strong>Temporary Password:</strong> <span style="font-family: monospace; background-color: #e1e8ed; padding: 2px 6px; border-radius: 4px;">${tempPassword}</span></p>
+              </div>
+
+              <p>Please log in using the button below. You will be required to change your password upon your first login.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${loginUrl}" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Login to Dashboard</a>
+              </div>
+              
+              <p style="font-size: 14px; color: #7f8c8d;">If the button above doesn't work, copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #3498db; font-size: 14px;">${loginUrl}</p>
+            </div>
+            <div style="background-color: #ecf0f1; padding: 15px; text-align: center; font-size: 12px; color: #7f8c8d;">
+              <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `Welcome to ${companyName}. Your account has been created.\n\nEmail: ${email}\nPassword: ${tempPassword}\n\nPlease login at: ${loginUrl}`,
+    });
+  }
+
+  static async resendUserCredentials(email: string): Promise<{ temporaryPassword: string }> {
+    logger.info(`Resending credentials for user: ${email}`);
+
+    // Check if user exists
+    const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Fetch company information from employee record
+    let companyName = 'HRM System';
+    let companyEmail = email; // Default to personal email if company email not found
+    try {
+      const [employeeData] = (await sequelize.query(
+        `SELECT c.name as "companyName", e."userCompEmail"
+         FROM "Employees" e
+         INNER JOIN "Companies" c ON e."companyId" = c.id
+         WHERE LOWER(e."userEmail") = LOWER(:email)
+         LIMIT 1`,
+        {
+          replacements: { email },
+          type: QueryTypes.SELECT,
+        }
+      )) as { companyName: string; userCompEmail: string }[];
+      
+      if (employeeData) {
+        if (employeeData.companyName) {
+          companyName = employeeData.companyName;
+        }
+        if (employeeData.userCompEmail) {
+          companyEmail = employeeData.userCompEmail;
+        }
+      }
+    } catch (error) {
+      logger.warn(`Could not fetch company information for ${email}:`, error);
+      // Continue with default values
+    }
+
+    // Generate temporary password
+    const temporaryPassword = this.generateTemporaryPassword();
+    const hashedPassword = await this.hashPassword(temporaryPassword);
+
+    // Update user
+    user.password = hashedPassword;
+    user.mustChangePassword = true; // Force change on login
+    await user.save();
+
+    logger.info(`Credentials reset for user: ${email}`);
+
+    // Send email
+    if (isEmailSendingEnabled()) {
+      try {
+        await this.sendEmployeeWelcomeEmail(
+          email,
+          temporaryPassword,
+          companyName,
+          companyEmail
+        );
+      } catch (emailError) {
+        logger.error(`Failed to send credentials email to ${email}:`, emailError);
+      }
+    }
+
+    return { temporaryPassword };
   }
 }

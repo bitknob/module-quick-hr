@@ -189,11 +189,11 @@ export const rejectLeaveRequest = async (
       return next(new ValidationError('Insufficient permissions to reject leave request'));
     }
 
-    if (!req.user?.uid) {
+    if (!req.user?.userId) {
       return next(new ValidationError('User ID is required'));
     }
 
-    const leaveRequest = await LeaveService.rejectLeaveRequest(id, req.user.uid, companyId);
+    const leaveRequest = await LeaveService.rejectLeaveRequest(id, req.user.userId, companyId);
     const leaveRequestData = leaveRequest.toJSON ? leaveRequest.toJSON() : leaveRequest;
 
     ResponseFormatter.success(res, leaveRequestData, 'Leave request rejected successfully');

@@ -206,13 +206,18 @@ export class LeaveService {
       throw new NotFoundError('Leave request');
     }
 
-    if (leaveRequest.status !== LeaveStatus.PENDING) {
-      throw new ValidationError('Only pending leave requests can be rejected');
+    const currentStatus = leaveRequest.get('status') as string;
+    if (currentStatus !== LeaveStatus.PENDING) {
+      throw new ValidationError(`Only pending leave requests can be rejected. Current status: ${currentStatus}`);
     }
 
     const approver = await EmployeeQueries.findById(approverId, companyId);
+    console.log('Looking for approver with ID:', approverId);
+    console.log('Company ID:', companyId);
+    console.log('Found approver:', approver);
+    
     if (!approver) {
-      throw new NotFoundError('Approver');
+      throw new NotFoundError(`Approver not found. User ID: ${approverId}, Company ID: ${companyId}`);
     }
 
     await LeaveRequest.update(

@@ -41,7 +41,7 @@ export interface EmailOptions {
   replyTo?: string;
 }
 
-export const sendEmail = async (options: EmailOptions): Promise<void> => {
+export const sendServiceEmail = async (options: EmailOptions): Promise<void> => {
   try {
     const fromEmail = options.from || emailConfig.fromEmail || 'noreply@hrm.com';
     const fromName = emailConfig.fromName || 'HRM System';

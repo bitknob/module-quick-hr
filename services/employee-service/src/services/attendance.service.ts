@@ -207,6 +207,9 @@ export class AttendanceService {
       throw new NotFoundError('No check-in record found for today');
     }
 
+    console.log('Attendance object:', attendance);
+    console.log('Attendance ID:', attendance.get('id'));
+
     if (attendance.checkOut) {
       throw new ConflictError('Already checked out today');
     }
@@ -215,12 +218,17 @@ export class AttendanceService {
       throw new ValidationError('Check-out time cannot be before check-in time');
     }
 
+    const attendanceId = attendance.get('id') as string;
+    if (!attendanceId) {
+      throw new Error('Attendance record is missing ID');
+    }
+
     await Attendance.update(
       { checkOut: checkOut },
-      { where: { id: attendance.id } }
+      { where: { id: attendanceId } }
     );
 
-    return await AttendanceQueries.findById(attendance.id, companyId) as Attendance;
+    return await AttendanceQueries.findById(attendanceId, companyId) as Attendance;
   }
 
   static async searchAttendances(
