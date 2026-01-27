@@ -29,6 +29,7 @@ This API documentation is organized by module for easier navigation and maintena
 - [Notification Management](./19-notifications.md) - Notification system with in-app, email, and push support
 - [User Role Assignment](./20-user-role-assignment.md) - Assign and manage user roles for employees
 - [Employee Onboarding](./21-employee-onboarding.md) - Streamlined employee onboarding with combined user and employee creation
+- [Payment Service](./22-payments.md) - Payment processing, order creation, and verification using Razorpay integration
 
 ## Quick Start
 

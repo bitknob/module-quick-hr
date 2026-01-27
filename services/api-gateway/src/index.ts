@@ -14,7 +14,9 @@ app.use(cors());
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:9401';
 const EMPLOYEE_SERVICE_URL = process.env.EMPLOYEE_SERVICE_URL || 'http://localhost:9402';
+
 const PAYROLL_SERVICE_URL = process.env.PAYROLL_SERVICE_URL || 'http://localhost:9403';
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:9404';
 
 app.use(
   '/api/auth',
@@ -38,7 +40,11 @@ app.use(
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
       // Handle specific error codes
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -80,7 +86,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -119,7 +129,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -158,7 +172,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -197,7 +215,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -236,7 +258,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -275,7 +301,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -314,7 +344,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -353,7 +387,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -392,7 +430,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -431,7 +473,11 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -470,7 +516,54 @@ app.use(
 
       logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
 
-      if ((err as any).code === 'ECONNREFUSED' || (err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
+        res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable. Please try again.',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Service temporarily unavailable',
+        });
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      logger.info(`Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+    },
+  })
+);
+
+app.use(
+  '/api/payments',
+  createProxyMiddleware({
+    target: PAYMENT_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api/payments': '/api/payments',
+    },
+    timeout: 60000,
+    proxyTimeout: 60000,
+    logLevel: 'warn',
+    onProxyReq: (proxyReq, req) => {
+      logger.info(`Proxying ${req.method} ${req.url} to ${PAYMENT_SERVICE_URL}`);
+    },
+    onError: (err, req, res) => {
+      if (res.headersSent) {
+        return;
+      }
+
+      logger.error(`Proxy error: ${err.message}`, { code: (err as any).code });
+
+      if (
+        (err as any).code === 'ECONNREFUSED' ||
+        (err as any).code === 'ECONNRESET' ||
+        (err as any).code === 'ETIMEDOUT'
+      ) {
         res.status(503).json({
           success: false,
           error: 'Service temporarily unavailable. Please try again.',
@@ -497,7 +590,9 @@ app.get('/health', (req, res) => {
       services: {
         auth: AUTH_SERVICE_URL,
         employee: EMPLOYEE_SERVICE_URL,
+
         payroll: PAYROLL_SERVICE_URL,
+        payment: PAYMENT_SERVICE_URL,
       },
     },
     'API Gateway is healthy'
@@ -510,5 +605,7 @@ app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
   logger.info(`Proxying auth service: ${AUTH_SERVICE_URL}`);
   logger.info(`Proxying employee service: ${EMPLOYEE_SERVICE_URL}`);
+
   logger.info(`Proxying payroll service: ${PAYROLL_SERVICE_URL}`);
+  logger.info(`Proxying payment service: ${PAYMENT_SERVICE_URL}`);
 });

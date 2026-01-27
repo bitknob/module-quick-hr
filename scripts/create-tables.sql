@@ -541,3 +541,30 @@ CREATE TRIGGER update_menus_updated_at BEFORE UPDATE ON "Menus"
 DROP TRIGGER IF EXISTS update_verifications_updated_at ON "Verifications";
 CREATE TRIGGER update_verifications_updated_at BEFORE UPDATE ON "Verifications"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Payments Table
+CREATE TABLE IF NOT EXISTS "Payments" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "orderId" VARCHAR(255) NOT NULL UNIQUE,
+    "paymentId" VARCHAR(255),
+    "signature" VARCHAR(255),
+    "amount" DECIMAL(10, 2) NOT NULL,
+    "currency" VARCHAR(3) NOT NULL DEFAULT 'INR',
+    "status" VARCHAR(20) DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed')),
+    "receipt" VARCHAR(255),
+    "customerName" VARCHAR(255),
+    "customerEmail" VARCHAR(255),
+    "customerPhone" VARCHAR(50),
+    "notes" JSONB,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_order_id ON "Payments"("orderId");
+CREATE INDEX IF NOT EXISTS idx_payments_payment_id ON "Payments"("paymentId");
+CREATE INDEX IF NOT EXISTS idx_payments_status ON "Payments"("status");
+CREATE INDEX IF NOT EXISTS idx_payments_customer_email ON "Payments"("customerEmail");
+
+DROP TRIGGER IF EXISTS update_payments_updated_at ON "Payments";
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON "Payments"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
