@@ -13,8 +13,9 @@ const pool = new Pool({
 
 const SALT_ROUNDS = 12;
 
-async function seed() {
+async function seed(isRestart = false) {
   const client = await pool.connect();
+  let clientReleased = false;
   try {
     console.log('Starting database seeding...');
 
@@ -35,6 +36,7 @@ async function seed() {
       
       // Close the current connection before running sync
       client.release();
+      clientReleased = true;
       
       // Run sync script
       const { execSync } = require('child_process');
@@ -47,7 +49,7 @@ async function seed() {
       }
       
       // Reconnect after sync
-      return seed(); // Restart seeding after sync
+      return seed(true); // Restart seeding after sync
     }
 
     // Create Quick HR company first (for super admin)
@@ -711,7 +713,9 @@ async function seed() {
     console.error('Seeding failed:', error);
     process.exit(1);
   } finally {
-    client.release();
+    if (!clientReleased) {
+      client.release();
+    }
     await pool.end();
   }
 }
