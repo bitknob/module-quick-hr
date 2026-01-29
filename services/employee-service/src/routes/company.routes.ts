@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getAllCompanies,
   getCompany,
+  getCompanyByName,
   createCompany,
   updateCompany,
   deleteCompany,
@@ -30,6 +31,12 @@ router.get(
 );
 
 router.get(
+  '/by-name/:name',
+  authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN),
+  getCompanyByName
+);
+
+router.get(
   '/:id',
   authorize(
     UserRole.SUPER_ADMIN,
@@ -41,23 +48,11 @@ router.get(
   getCompany
 );
 
-router.post(
-  '/',
-  authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN),
-  createCompany
-);
+router.post('/', authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN), createCompany);
 
-router.put(
-  '/:id',
-  authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN),
-  updateCompany
-);
+router.put('/:id', authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN), updateCompany);
 
-router.delete(
-  '/:id',
-  authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN),
-  deleteCompany
-);
+router.delete('/:id', authorize(UserRole.SUPER_ADMIN, UserRole.PROVIDER_ADMIN), deleteCompany);
 
 router.post(
   '/:companyId/upload-profile-image',
@@ -74,4 +69,3 @@ router.post(
 );
 
 export default router;
-

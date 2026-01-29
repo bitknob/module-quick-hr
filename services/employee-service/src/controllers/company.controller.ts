@@ -28,10 +28,34 @@ export const getCompany = async (
 
     // Check access permissions
     if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== id) {
-      return ResponseFormatter.error(res, 'Access denied: Cannot access different company', '', 403);
+      return ResponseFormatter.error(
+        res,
+        'Access denied: Cannot access different company',
+        '',
+        403
+      );
     }
 
     const company = await CompanyService.getCompanyById(id);
+    ResponseFormatter.success(res, company, 'Company retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCompanyByName = async (
+  req: EnrichedAuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { name } = req.params;
+
+    // Note: This endpoint is primarily for internal service use
+    // If exposed publicly, we might want to restrict checking existence of companies
+    const decodedName = decodeURIComponent(name);
+
+    const company = await CompanyService.getCompanyByName(decodedName);
     ResponseFormatter.success(res, company, 'Company retrieved successfully');
   } catch (error) {
     next(error);
@@ -44,7 +68,7 @@ export const createCompany = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, code, description, hrbpId } = req.body;
+    const { name, code, description, hrbpId, subscriptionStatus, subscriptionEndsAt } = req.body;
 
     if (!name || !code) {
       return ResponseFormatter.error(res, 'Name and code are required', '', 400);
@@ -55,6 +79,8 @@ export const createCompany = async (
       code,
       description,
       hrbpId,
+      subscriptionStatus,
+      subscriptionEndsAt,
     });
 
     ResponseFormatter.success(res, company, 'Company created successfully', '', 201);
@@ -75,10 +101,16 @@ export const updateCompany = async (
 
     // Check access permissions
     if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== id) {
-      return ResponseFormatter.error(res, 'Access denied: Cannot update different company', '', 403);
+      return ResponseFormatter.error(
+        res,
+        'Access denied: Cannot update different company',
+        '',
+        403
+      );
     }
 
-    const { name, code, description, hrbpId, status } = req.body;
+    const { name, code, description, hrbpId, status, subscriptionStatus, subscriptionEndsAt } =
+      req.body;
 
     const company = await CompanyService.updateCompany(id, {
       name,
@@ -86,6 +118,8 @@ export const updateCompany = async (
       description,
       hrbpId,
       status,
+      subscriptionStatus,
+      subscriptionEndsAt,
     });
 
     ResponseFormatter.success(res, company, 'Company updated successfully');
@@ -120,7 +154,12 @@ export const uploadCompanyProfileImage = async (
 
     // Check access permissions
     if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId !== companyId) {
-      return ResponseFormatter.error(res, 'Access denied: Cannot upload image for different company', '', 403);
+      return ResponseFormatter.error(
+        res,
+        'Access denied: Cannot upload image for different company',
+        '',
+        403
+      );
     }
 
     if (!req.file) {

@@ -34,16 +34,20 @@ REM Function to check if port is in use
 set API_GATEWAY_PORT=9400
 set AUTH_SERVICE_PORT=9401
 set EMPLOYEE_SERVICE_PORT=9402
+set PAYROLL_SERVICE_PORT=9403
+set PAYMENT_SERVICE_PORT=9404
 
 REM Load port from .env if exists
 for /f "tokens=2 delims==" %%a in ('findstr /b "API_GATEWAY_PORT=" .env') do set API_GATEWAY_PORT=%%a
 for /f "tokens=2 delims==" %%a in ('findstr /b "AUTH_SERVICE_PORT=" .env') do set AUTH_SERVICE_PORT=%%a
 for /f "tokens=2 delims==" %%a in ('findstr /b "EMPLOYEE_SERVICE_PORT=" .env') do set EMPLOYEE_SERVICE_PORT=%%a
+for /f "tokens=2 delims==" %%a in ('findstr /b "PAYROLL_SERVICE_PORT=" .env') do set PAYROLL_SERVICE_PORT=%%a
+for /f "tokens=2 delims==" %%a in ('findstr /b "PAYMENT_SERVICE_PORT=" .env') do set PAYMENT_SERVICE_PORT=%%a
 
 echo Checking ports...
 
 REM Check and kill processes on ports
-for %%p in (%API_GATEWAY_PORT% %AUTH_SERVICE_PORT% %EMPLOYEE_SERVICE_PORT%) do (
+for %%p in (%API_GATEWAY_PORT% %AUTH_SERVICE_PORT% %EMPLOYEE_SERVICE_PORT% %PAYROLL_SERVICE_PORT% %PAYMENT_SERVICE_PORT%) do (
     netstat -ano | findstr ":%%p" | findstr "LISTENING" >nul
     if !errorlevel! equ 0 (
         echo Port %%p is in use. Attempting to free it...
@@ -103,6 +107,8 @@ echo Services running on:
 echo   - API Gateway: http://localhost:%API_GATEWAY_PORT%
 echo   - Auth Service: http://localhost:%AUTH_SERVICE_PORT%
 echo   - Employee Service: http://localhost:%EMPLOYEE_SERVICE_PORT%
+echo   - Payroll Service: http://localhost:%PAYROLL_SERVICE_PORT%
+echo   - Payment Service: http://localhost:%PAYMENT_SERVICE_PORT%
 echo.
 echo Press Ctrl+C to stop all services
 

@@ -78,6 +78,9 @@ Base Path: `/api/auth`
 **Full URL:** `http://localhost:9400/api/auth/signup`  
 **Authentication:** Not required
 
+**Description:**
+Create a new user account. If company details are provided and the company does not exist, a new company is created with a **14-day free trial**.
+
 **Request Body:**
 
 ```json
@@ -85,7 +88,14 @@ Base Path: `/api/auth`
   "email": "user@example.com",
   "password": "SecurePass123!",
   "phoneNumber": "+1234567890",
-  "role": "employee"
+  "role": "employee",
+  "companyEmail": "user@company.com",
+  "companyName": "Tech Corp",
+  "firstName": "John",
+  "lastName": "Doe",
+  "jobTitle": "Software Engineer",
+  "department": "Engineering",
+  "hireDate": "2024-01-01"
 }
 ```
 
@@ -104,6 +114,14 @@ Base Path: `/api/auth`
       "email": "user@example.com",
       "role": "employee",
       "emailVerified": false
+    },
+    "employee": {
+      "id": "employee-uuid",
+      "companyId": "company-uuid",
+      "firstName": "John",
+      "lastName": "Doe",
+      "jobTitle": "Software Engineer",
+      "department": "Engineering"
     },
     "accessToken": "jwt_token",
     "refreshToken": "refresh_token"
@@ -2881,7 +2899,6 @@ All API requests are automatically logged to the `RequestLogs` table. Each log e
 ### Logged Information
 
 - **Request**:
-
   - HTTP method (GET, POST, PUT, DELETE, etc.)
   - Full URL and path
   - Query parameters
@@ -2889,13 +2906,11 @@ All API requests are automatically logged to the `RequestLogs` table. Each log e
   - Request body (sensitive data redacted)
 
 - **Response**:
-
   - HTTP status code
   - Response body
   - Response headers
 
 - **User Context**:
-
   - User ID (if authenticated)
   - Employee ID (if available)
   - Company ID (if available)

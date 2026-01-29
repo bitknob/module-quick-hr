@@ -8,6 +8,8 @@ export class CompanyService {
     code: string;
     description?: string;
     hrbpId?: string;
+    subscriptionStatus?: 'trial' | 'active' | 'inactive' | 'expired';
+    subscriptionEndsAt?: Date;
   }): Promise<Company> {
     const existingCompany = await CompanyQueries.findByCode(data.code);
     if (existingCompany) {
@@ -29,6 +31,14 @@ export class CompanyService {
     return company;
   }
 
+  static async getCompanyByName(name: string): Promise<Company> {
+    const company = await CompanyQueries.findByName(name);
+    if (!company) {
+      throw new NotFoundError('Company not found');
+    }
+    return company;
+  }
+
   static async updateCompany(
     id: string,
     data: {
@@ -37,6 +47,8 @@ export class CompanyService {
       description?: string;
       hrbpId?: string;
       status?: 'active' | 'inactive';
+      subscriptionStatus?: 'trial' | 'active' | 'inactive' | 'expired';
+      subscriptionEndsAt?: Date;
     }
   ): Promise<Company> {
     const company = await CompanyQueries.findById(id);
@@ -91,4 +103,3 @@ export class CompanyService {
     return updatedCompany;
   }
 }
-

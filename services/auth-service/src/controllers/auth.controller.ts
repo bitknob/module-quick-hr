@@ -12,7 +12,14 @@ import { User } from '../models/User.model';
 import { z } from 'zod';
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid personal email address'),
+  companyEmail: z.string().email('Invalid company email address').optional(),
+  companyName: z.string().min(1, 'Company name is required').optional(),
+  firstName: z.string().min(1, 'First name is required').optional(),
+  lastName: z.string().min(1, 'Last name is required').optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  hireDate: z.string().optional(), // ISO date string
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -95,6 +102,16 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
           role: result.user.role,
           emailVerified: result.user.emailVerified,
         },
+        employee: result.employee
+          ? {
+              id: result.employee.id,
+              companyId: result.employee.companyId,
+              firstName: result.employee.firstName,
+              lastName: result.employee.lastName,
+              jobTitle: result.employee.jobTitle,
+              department: result.employee.department,
+            }
+          : undefined,
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       },

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import axios from 'axios';
 import { User } from '../models/User.model';
 import { Verification, VerificationType } from '../models/Verification.model';
 import {
@@ -53,10 +54,17 @@ export class AuthService {
     password: string;
     phoneNumber?: string;
     role?: UserRole;
+    companyEmail?: string;
+    companyName?: string;
+    firstName?: string;
+    lastName?: string;
+    jobTitle?: string;
+    department?: string;
+    hireDate?: string;
     ipAddress?: string;
     userAgent?: string;
     requestBody?: any;
-  }): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  }): Promise<{ user: User; employee?: any; accessToken: string; refreshToken: string }> {
     logger.info(`Starting signup for email: ${data.email}`);
 
     const existingUser = await User.findOne({ where: { email: data.email } });
@@ -85,10 +93,10 @@ export class AuthService {
 
     logger.info(`Creating user in database for: ${data.email}`);
     const user = await User.create({
-      id: uuidv4(),
       email: data.email.toLowerCase().trim(),
       password: hashedPassword,
-      phoneNumber: data.phoneNumber,
+      phoneNumber:
+        data.phoneNumber && data.phoneNumber.trim() !== '' ? data.phoneNumber : undefined,
       role: data.role || UserRole.EMPLOYEE,
       emailVerified: false,
       phoneVerified: false,
@@ -98,15 +106,28 @@ export class AuthService {
       mustChangePassword: false,
     });
 
+    // Reload to ensure all fields are populated
+    await user.reload();
+
+    const userId = user.getDataValue('id') as string;
+    logger.info(`User created successfully with ID: ${userId}`);
+
+    // Ensure user.id is set
+    if (!userId) {
+      logger.error('User ID is null after creation!');
+      throw new Error('Failed to create user: User ID is null');
+    }
+
     // Remove sensitive data from request body before storing
     const safeRequestBody = { ...data };
     if (safeRequestBody.password) delete (safeRequestBody as any).password;
 
     // Send verification email asynchronously (non-blocking) if enabled
     if (isEmailSendingEnabled()) {
+      logger.info(`Creating verification record for userId: ${userId}`);
       // Create verification record
       const verification = await Verification.create({
-        userId: user.id,
+        userId: userId,
         type: VerificationType.EMAIL,
         token: verificationToken,
         expiresAt: verificationTokenExpiry,
@@ -134,22 +155,128 @@ export class AuthService {
     }
 
     const payload: JWTPayload = {
-      userId: user.id,
+      userId: userId,
       email: user.email,
       role: user.role,
       emailVerified: user.emailVerified,
     };
 
-    logger.info(`Generating tokens for user: ${user.id}`);
+    logger.info(`Generating tokens for user: ${userId}`);
     const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken({ userId: user.id });
+    const refreshToken = generateRefreshToken({ userId: userId });
 
     logger.info(`Signup completed successfully for: ${data.email}`);
 
     // Convert Sequelize model to plain object
     const userPlain = user.get({ plain: true });
 
-    return { user: userPlain as User, accessToken, refreshToken };
+    // Create employee record if company information is provided
+    let employee = null;
+    if (data.companyEmail && data.companyName && data.firstName && data.lastName) {
+      try {
+        logger.info(`Creating employee record for user: ${userId}`);
+
+        const employeeServiceUrl = process.env.EMPLOYEE_SERVICE_URL || 'http://localhost:9402';
+
+        // Generate a service token for internal API calls
+        const serviceToken = generateAccessToken({
+          userId: userId,
+          email: user.email,
+          role: UserRole.SUPER_ADMIN,
+          emailVerified: user.emailVerified,
+        });
+
+        // First, check if company exists or create it
+        let companyId: string;
+        try {
+          const companyResponse = await axios.get(
+            `${employeeServiceUrl}/api/companies/by-name/${encodeURIComponent(data.companyName)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${serviceToken}`,
+              },
+            }
+          );
+          companyId = companyResponse.data.response.id;
+          logger.info(`Found existing company: ${companyId}`);
+        } catch (error: any) {
+          if (
+            error.response?.status === 404 ||
+            error.response?.data?.header?.responseCode === 404
+          ) {
+            // Company doesn't exist, create it
+            logger.info(`Creating new company: ${data.companyName}`);
+
+            // Generate a simple code from company name
+            const companyCode = data.companyName
+              .toUpperCase()
+              .replace(/[^A-Z0-9]/g, '')
+              .substring(0, 10);
+
+            // Calculate 14 days trial end date
+            const trialEndsAt = new Date();
+            trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+            const createCompanyResponse = await axios.post(
+              `${employeeServiceUrl}/api/companies`,
+              {
+                name: data.companyName,
+                code: companyCode,
+                industry: 'Technology', // Default value
+                size: '1-10', // Default value
+                website: '',
+                address: '',
+                subscriptionStatus: 'trial',
+                subscriptionEndsAt: trialEndsAt,
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${serviceToken}`,
+                },
+              }
+            );
+            companyId = createCompanyResponse.data.response.id;
+            logger.info(`Created new company with ID: ${companyId}`);
+          } else {
+            throw error;
+          }
+        }
+
+        // Create employee record
+        const employeeData = {
+          userEmail: data.email,
+          userCompEmail: data.companyEmail,
+          companyId: companyId,
+          employeeId: `EMP-${Date.now().toString().slice(-6)}`,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          jobTitle: data.jobTitle || 'Employee',
+          department: data.department || 'General',
+          hireDate: data.hireDate || new Date().toISOString(),
+          status: 'active',
+          role: data.role || UserRole.EMPLOYEE,
+        };
+
+        const employeeResponse = await axios.post(
+          `${employeeServiceUrl}/api/employees`,
+          employeeData,
+          {
+            headers: {
+              Authorization: `Bearer ${serviceToken}`,
+            },
+          }
+        );
+
+        employee = employeeResponse.data.response.employee;
+        logger.info(`Created employee record with ID: ${employee.id}`);
+      } catch (error: any) {
+        logger.error('Failed to create employee record:', error.response?.data || error.message);
+        // Don't fail the signup if employee creation fails
+        // The user account is still created successfully
+      }
+    }
+
+    return { user: userPlain as User, employee, accessToken, refreshToken };
   }
 
   static async login(
@@ -168,7 +295,7 @@ export class AuthService {
     // If no user found, check if this is a company email for an existing employee
     if (!users) {
       console.log('No user found, checking if employee exists with company email:', email);
-      
+
       const [employee] = (await sequelize.query(
         `SELECT e."userEmail", e."firstName", e."lastName", e."companyId", c.name as "companyName"
          FROM "Employees" e
@@ -182,8 +309,10 @@ export class AuthService {
       )) as any[];
 
       if (employee) {
-        console.log('Found employee with company email, creating user account for company email login');
-        
+        console.log(
+          'Found employee with company email, creating user account for company email login'
+        );
+
         // Create user account for the employee using COMPANY EMAIL as login email
         const temporaryPassword = this.generateTemporaryPassword();
         const hashedPassword = await this.hashPassword(temporaryPassword);
@@ -216,7 +345,10 @@ export class AuthService {
           throw new UnauthorizedError('Failed to create user account');
         }
 
-        console.log('User account created for company email login. Temporary password:', temporaryPassword);
+        console.log(
+          'User account created for company email login. Temporary password:',
+          temporaryPassword
+        );
 
         // Send email with credentials to personal email but login with company email
         try {
@@ -230,9 +362,11 @@ export class AuthService {
           console.error('Failed to send credentials email:', emailError);
         }
 
-        throw new UnauthorizedError(`User account created for company email ${email}. Please check your personal email (${employee.userEmail}) for credentials and login with your company email (${email}).`);
+        throw new UnauthorizedError(
+          `User account created for company email ${email}. Please check your personal email (${employee.userEmail}) for credentials and login with your company email (${email}).`
+        );
       }
-      
+
       throw new UnauthorizedError('Invalid email or password');
     }
 
@@ -251,7 +385,7 @@ export class AuthService {
 
     const isPasswordValid = await this.comparePassword(password, userData.password);
     console.log('Password validation result:', isPasswordValid);
-    
+
     if (!isPasswordValid) {
       console.log('Password comparison failed');
       throw new UnauthorizedError('Invalid email or password');
@@ -963,7 +1097,7 @@ export class AuthService {
           type: QueryTypes.SELECT,
         }
       )) as { companyName: string; userCompEmail: string }[];
-      
+
       if (employeeData) {
         if (employeeData.companyName) {
           companyName = employeeData.companyName;
@@ -991,12 +1125,7 @@ export class AuthService {
     // Send email
     if (isEmailSendingEnabled()) {
       try {
-        await this.sendEmployeeWelcomeEmail(
-          email,
-          temporaryPassword,
-          companyName,
-          companyEmail
-        );
+        await this.sendEmployeeWelcomeEmail(email, temporaryPassword, companyName, companyEmail);
       } catch (emailError) {
         logger.error(`Failed to send credentials email to ${email}:`, emailError);
       }

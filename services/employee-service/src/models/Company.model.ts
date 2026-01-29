@@ -9,13 +9,15 @@ export interface CompanyAttributes {
   profileImageUrl?: string;
   hrbpId?: string;
   status: 'active' | 'inactive';
+  subscriptionStatus: 'trial' | 'active' | 'inactive' | 'expired';
+  subscriptionEndsAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface CompanyCreationAttributes extends Optional<
   CompanyAttributes,
-  'id' | 'createdAt' | 'updatedAt' | 'status'
+  'id' | 'createdAt' | 'updatedAt' | 'status' | 'subscriptionStatus'
 > {}
 
 export class Company
@@ -29,6 +31,8 @@ export class Company
   declare public profileImageUrl?: string;
   declare public hrbpId?: string;
   declare public status: 'active' | 'inactive';
+  declare public subscriptionStatus: 'trial' | 'active' | 'inactive' | 'expired';
+  declare public subscriptionEndsAt?: Date;
   declare public readonly createdAt: Date;
   declare public readonly updatedAt: Date;
 }
@@ -64,6 +68,14 @@ Company.init(
     status: {
       type: DataTypes.ENUM('active', 'inactive'),
       defaultValue: 'active',
+    },
+    subscriptionStatus: {
+      type: DataTypes.ENUM('trial', 'active', 'inactive', 'expired'),
+      defaultValue: 'trial',
+    },
+    subscriptionEndsAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

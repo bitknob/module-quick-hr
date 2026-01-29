@@ -17,15 +17,24 @@ export class CompanyQueries {
     });
   }
 
+  static async findByName(name: string): Promise<Company | null> {
+    return await Company.findOne({
+      where: { name },
+    });
+  }
+
   static async create(data: {
     name: string;
     code: string;
     description?: string;
     hrbpId?: string;
+    subscriptionStatus?: 'trial' | 'active' | 'inactive' | 'expired';
+    subscriptionEndsAt?: Date;
   }): Promise<Company> {
     return await Company.create({
       ...data,
       status: 'active',
+      subscriptionStatus: data.subscriptionStatus || 'trial',
     });
   }
 
@@ -38,6 +47,8 @@ export class CompanyQueries {
       profileImageUrl?: string;
       hrbpId?: string;
       status?: 'active' | 'inactive';
+      subscriptionStatus?: 'trial' | 'active' | 'inactive' | 'expired';
+      subscriptionEndsAt?: Date;
     }
   ): Promise<number> {
     const [affectedCount] = await Company.update(data, {
@@ -47,11 +58,7 @@ export class CompanyQueries {
   }
 
   static async delete(id: string): Promise<number> {
-    const [affectedCount] = await Company.update(
-      { status: 'inactive' },
-      { where: { id } }
-    );
+    const [affectedCount] = await Company.update({ status: 'inactive' }, { where: { id } });
     return affectedCount;
   }
 }
-

@@ -18,6 +18,8 @@ fi
 API_GATEWAY_PORT=${API_GATEWAY_PORT:-9400}
 AUTH_SERVICE_PORT=${AUTH_SERVICE_PORT:-9401}
 EMPLOYEE_SERVICE_PORT=${EMPLOYEE_SERVICE_PORT:-9402}
+PAYROLL_SERVICE_PORT=${PAYROLL_SERVICE_PORT:-9403}
+PAYMENT_SERVICE_PORT=${PAYMENT_SERVICE_PORT:-9404}
 
 # Function to kill process on port
 kill_port() {
@@ -56,6 +58,8 @@ echo ""
 kill_port $API_GATEWAY_PORT "API Gateway"
 kill_port $AUTH_SERVICE_PORT "Auth Service"
 kill_port $EMPLOYEE_SERVICE_PORT "Employee Service"
+kill_port $PAYROLL_SERVICE_PORT "Payroll Service"
+kill_port $PAYMENT_SERVICE_PORT "Payment Service"
 
 # Kill any remaining node processes related to the project
 echo ""

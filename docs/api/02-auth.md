@@ -11,6 +11,9 @@ Base Path: `/api/auth`
 **Full URL:** `http://localhost:9400/api/auth/signup`  
 **Authentication:** Not required
 
+**Description:**
+Create a new user account. If company details are provided (`companyName`, `companyEmail`) and the company does not exist, a new company is created with a **14-day free trial**. An employee record is also created and linked to the user.
+
 **Request Body:**
 
 ```json
@@ -18,7 +21,14 @@ Base Path: `/api/auth`
   "email": "user@example.com",
   "password": "SecurePass123!",
   "phoneNumber": "+1234567890",
-  "role": "employee"
+  "role": "employee",
+  "companyEmail": "user@company.com",
+  "companyName": "Tech Corp",
+  "firstName": "John",
+  "lastName": "Doe",
+  "jobTitle": "Software Engineer",
+  "department": "Engineering",
+  "hireDate": "2024-01-01"
 }
 ```
 
@@ -38,6 +48,14 @@ Base Path: `/api/auth`
       "role": "employee",
       "emailVerified": false,
       "mustChangePassword": false
+    },
+    "employee": {
+      "id": "employee-uuid",
+      "companyId": "company-uuid",
+      "firstName": "John",
+      "lastName": "Doe",
+      "jobTitle": "Software Engineer",
+      "department": "Engineering"
     },
     "accessToken": "jwt_token",
     "refreshToken": "refresh_token"
@@ -884,6 +902,7 @@ Resets a user's password to a system-generated temporary password and resends th
 **Email Content:**
 
 The welcome email sent to the user contains:
+
 - **Company Email:** The email used for login (company email)
 - **Temporary Password:** System-generated secure password
 - **Company Name:** Automatically fetched from employee record

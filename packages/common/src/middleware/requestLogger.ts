@@ -116,8 +116,14 @@ export const requestLogger = (
         serviceName,
       };
 
-      if (authReq.user?.uid) {
+      // Only set userId if it's a valid UUID and the response was successful (user exists)
+      if (authReq.user?.uid && responseStatus !== 404) {
         log.userId = authReq.user.uid;
+      } else if (authReq.user?.userId && responseStatus !== 404) {
+        log.userId = authReq.user.userId;
+      } else {
+        // Don't set userId for failed authentication or non-existent users
+        delete log.userId;
       }
 
       if ((req as any).employee) {

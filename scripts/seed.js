@@ -20,6 +20,26 @@ async function seed() {
 
     await client.query('BEGIN');
 
+    // Create Quick HR company first (for super admin)
+    let quickHrCompanyId = null;
+    const quickHrCompany = await client.query('SELECT id FROM "Companies" WHERE code = $1', [
+      'QUICKHR',
+    ]);
+
+    if (quickHrCompany.rows.length === 0) {
+      const result = await client.query(
+        `INSERT INTO "Companies" (id, name, code, description, status, "createdAt", "updatedAt")
+         VALUES (uuid_generate_v4(), $1, $2, $3, 'active', NOW(), NOW())
+         RETURNING id`,
+        ['Quick HR', 'QUICKHR', 'Quick HR - HRM Platform Provider']
+      );
+      quickHrCompanyId = result.rows[0].id;
+      console.log('Quick HR company created');
+    } else {
+      quickHrCompanyId = quickHrCompany.rows[0].id;
+      console.log('Quick HR company already exists');
+    }
+
     // Optionally create super_admin user first
     const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
@@ -53,55 +73,8 @@ async function seed() {
       );
     }
 
-    // Create Quick HR company first (for super admin)
-    let quickHrCompanyId = null;
-    const quickHrCompany = await client.query('SELECT id FROM "Companies" WHERE code = $1', [
-      'QUICKHR',
-    ]);
-
-    if (quickHrCompany.rows.length === 0) {
-      const result = await client.query(
-        `INSERT INTO "Companies" (id, name, code, description, status, "createdAt", "updatedAt")
-         VALUES (uuid_generate_v4(), $1, $2, $3, 'active', NOW(), NOW())
-         RETURNING id`,
-        ['Quick HR', 'QUICKHR', 'Quick HR - HRM Platform Provider']
-      );
-      quickHrCompanyId = result.rows[0].id;
-      console.log('Quick HR company created');
-    } else {
-      quickHrCompanyId = quickHrCompany.rows[0].id;
-      console.log('Quick HR company already exists');
-    }
-
-    // Create employee record for super admin if user was created
-    if (superAdminUserId && quickHrCompanyId) {
-      const existingSuperAdminEmployee = await client.query(
-        'SELECT id FROM "Employees" WHERE "userEmail" = $1',
-        [superAdminEmail.toLowerCase().trim()]
-      );
-
-      if (existingSuperAdminEmployee.rows.length === 0) {
-        await client.query(
-          `INSERT INTO "Employees" (id, "userEmail", "companyId", "employeeId", "firstName", "lastName", "userCompEmail", 
-           "jobTitle", department, "hireDate", status, role, "createdAt", "updatedAt")
-           VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', 'super_admin', NOW(), NOW())`,
-          [
-            superAdminEmail.toLowerCase().trim(),
-            quickHrCompanyId,
-            'EMP-ADMIN-001',
-            'Super',
-            'Admin',
-            superAdminEmail.toLowerCase().trim(),
-            'System Administrator',
-            'Administration',
-            new Date('2020-01-01'),
-          ]
-        );
-        console.log(`Super admin employee record created for Quick HR company`);
-      } else {
-        console.log(`Super admin employee record already exists`);
-      }
-    }
+    // Seed pricing plans
+    await seedPricingPlans(client);
 
     // Seed companies
     const companies = [
@@ -164,6 +137,40 @@ async function seed() {
     }
 
     console.log(`Seeded departments successfully for ${companyIds.length} companies!`);
+
+    // Seed subscriptions (now that all companies exist)
+    const { seedSubscriptions } = require('./seed-subscriptions');
+    await seedSubscriptions();
+
+    // Create employee record for super admin if user was created
+    if (superAdminUserId && quickHrCompanyId) {
+      const existingSuperAdminEmployee = await client.query(
+        'SELECT id FROM "Employees" WHERE "userEmail" = $1',
+        [superAdminEmail.toLowerCase().trim()]
+      );
+
+      if (existingSuperAdminEmployee.rows.length === 0) {
+        await client.query(
+          `INSERT INTO "Employees" (id, "userEmail", "companyId", "employeeId", "firstName", "lastName", "userCompEmail", 
+           "jobTitle", department, "hireDate", status, role, "createdAt", "updatedAt")
+           VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', 'super_admin', NOW(), NOW())`,
+          [
+            superAdminEmail.toLowerCase().trim(),
+            quickHrCompanyId,
+            'EMP-ADMIN-001',
+            'Super',
+            'Admin',
+            superAdminEmail.toLowerCase().trim(),
+            'System Administrator',
+            'Administration',
+            new Date('2020-01-01'),
+          ]
+        );
+        console.log(`Super admin employee record created for Quick HR company`);
+      } else {
+        console.log(`Super admin employee record already exists`);
+      }
+    }
 
     // Helper function to get or create user and return user ID
     const getOrCreateUser = async (email, password, role) => {
@@ -676,6 +683,98 @@ async function seed() {
   } finally {
     client.release();
     await pool.end();
+  }
+}
+
+async function seedPricingPlans(client) {
+  try {
+    console.log('Seeding pricing plans...');
+
+    // Clear existing pricing plans (cascade delete subscriptions and history)
+    await client.query('DELETE FROM "SubscriptionHistory"');
+    await client.query('DELETE FROM "Subscriptions"');
+    await client.query('DELETE FROM "PricingPlans"');
+
+    // Insert pricing plans
+    const pricingPlans = [
+      {
+        name: 'Starter',
+        description: 'Perfect for small teams getting started with HR management',
+        monthly_price: 2499.00,
+        yearly_price: 24990.00,
+        features: [
+          { name: "Up to 25 employees", included: true },
+          { name: "Employee directory", included: true },
+          { name: "Leave management", included: true },
+          { name: "Basic attendance tracking", included: true },
+          { name: "Email support", included: true },
+          { name: "Document storage (5GB)", included: true },
+          { name: "Custom workflows", included: false },
+          { name: "Advanced analytics", included: false },
+          { name: "API access", included: false },
+          { name: "SSO integration", included: false }
+        ],
+        sort_order: 1
+      },
+      {
+        name: 'Professional',
+        description: 'For growing companies that need more power and flexibility',
+        monthly_price: 6499.00,
+        yearly_price: 64990.00,
+        features: [
+          { name: "Up to 100 employees", included: true },
+          { name: "Employee directory", included: true },
+          { name: "Leave management", included: true },
+          { name: "Advanced attendance tracking", included: true },
+          { name: "Priority email & chat support", included: true },
+          { name: "Document storage (50GB)", included: true },
+          { name: "Custom workflows", included: true },
+          { name: "Advanced analytics", included: true },
+          { name: "API access", included: false },
+          { name: "SSO integration", included: false }
+        ],
+        sort_order: 2
+      },
+      {
+        name: 'Enterprise',
+        description: 'For large organizations with complex HR requirements',
+        monthly_price: 16499.00,
+        yearly_price: 164990.00,
+        features: [
+          { name: "Unlimited employees", included: true },
+          { name: "Employee directory", included: true },
+          { name: "Leave management", included: true },
+          { name: "Advanced attendance tracking", included: true },
+          { name: "24/7 dedicated support", included: true },
+          { name: "Unlimited document storage", included: true },
+          { name: "Custom workflows", included: true },
+          { name: "Advanced analytics", included: true },
+          { name: "API access", included: true },
+          { name: "SSO integration", included: true }
+        ],
+        sort_order: 3
+      }
+    ];
+
+    for (const plan of pricingPlans) {
+      await client.query(
+        `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, sort_order, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())`,
+        [
+          plan.name,
+          plan.description,
+          plan.monthly_price,
+          plan.yearly_price,
+          JSON.stringify(plan.features),
+          plan.sort_order
+        ]
+      );
+    }
+
+    console.log('Pricing plans seeded successfully!');
+  } catch (error) {
+    console.error('Pricing plans seeding failed:', error);
+    throw error;
   }
 }
 

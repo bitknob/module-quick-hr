@@ -100,6 +100,8 @@ kill_port() {
 API_GATEWAY_PORT=${API_GATEWAY_PORT:-9400}
 AUTH_SERVICE_PORT=${AUTH_SERVICE_PORT:-9401}
 EMPLOYEE_SERVICE_PORT=${EMPLOYEE_SERVICE_PORT:-9402}
+PAYROLL_SERVICE_PORT=${PAYROLL_SERVICE_PORT:-9403}
+PAYMENT_SERVICE_PORT=${PAYMENT_SERVICE_PORT:-9404}
 
 echo "Checking ports..."
 if check_port $API_GATEWAY_PORT; then
@@ -118,6 +120,18 @@ if check_port $EMPLOYEE_SERVICE_PORT; then
     kill_port $EMPLOYEE_SERVICE_PORT "Employee Service"
 else
     echo -e "${GREEN}Port $EMPLOYEE_SERVICE_PORT (Employee Service) is available.${NC}"
+fi
+
+if check_port $PAYROLL_SERVICE_PORT; then
+    kill_port $PAYROLL_SERVICE_PORT "Payroll Service"
+else
+    echo -e "${GREEN}Port $PAYROLL_SERVICE_PORT (Payroll Service) is available.${NC}"
+fi
+
+if check_port $PAYMENT_SERVICE_PORT; then
+    kill_port $PAYMENT_SERVICE_PORT "Payment Service"
+else
+    echo -e "${GREEN}Port $PAYMENT_SERVICE_PORT (Payment Service) is available.${NC}"
 fi
 
 # Check database connection
@@ -242,6 +256,8 @@ echo "Services running on:"
 echo "  - API Gateway: http://localhost:$API_GATEWAY_PORT"
 echo "  - Auth Service: http://localhost:$AUTH_SERVICE_PORT"
 echo "  - Employee Service: http://localhost:$EMPLOYEE_SERVICE_PORT"
+echo "  - Payroll Service: http://localhost:$PAYROLL_SERVICE_PORT"
+echo "  - Payment Service: http://localhost:$PAYMENT_SERVICE_PORT"
 echo ""
 echo "Press Ctrl+C to stop all services"
 
