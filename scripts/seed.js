@@ -762,6 +762,18 @@ async function seedPricingPlans(client) {
       await client.query('DELETE FROM "PricingPlans"');
     }
 
+    // Check if sort_order column exists
+    const sortOrderExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'PricingPlans'
+        AND column_name = 'sort_order'
+      );
+    `);
+    
+    const hasSortOrder = sortOrderExists.rows[0].exists;
+
     // Insert pricing plans
     const pricingPlans = [
       {
@@ -824,18 +836,33 @@ async function seedPricingPlans(client) {
     ];
 
     for (const plan of pricingPlans) {
-      await client.query(
-        `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, sort_order, status, "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())`,
-        [
-          plan.name,
-          plan.description,
-          plan.monthly_price,
-          plan.yearly_price,
-          JSON.stringify(plan.features),
-          plan.sort_order
-        ]
-      );
+      if (hasSortOrder) {
+        await client.query(
+          `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, sort_order, status, "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())`,
+          [
+            plan.name,
+            plan.description,
+            plan.monthly_price,
+            plan.yearly_price,
+            JSON.stringify(plan.features),
+            plan.sort_order
+          ]
+        );
+      } else {
+        // Insert without sort_order if column doesn't exist
+        await client.query(
+          `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, status, "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())`,
+          [
+            plan.name,
+            plan.description,
+            plan.monthly_price,
+            plan.yearly_price,
+            JSON.stringify(plan.features)
+          ]
+        );
+      }
     }
 
     console.log('Pricing plans seeded successfully!');
