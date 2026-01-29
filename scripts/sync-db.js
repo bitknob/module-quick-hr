@@ -26,6 +26,7 @@ async function syncDatabase() {
         monthly_price DECIMAL(10,2) NOT NULL,
         yearly_price DECIMAL(10,2) NOT NULL,
         features JSONB,
+        sort_order INTEGER,
         status VARCHAR(50) DEFAULT 'active',
         "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP

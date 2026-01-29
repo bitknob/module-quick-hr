@@ -825,8 +825,8 @@ async function seedPricingPlans(client) {
 
     for (const plan of pricingPlans) {
       await client.query(
-        `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, sort_order, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())`,
+        `INSERT INTO "PricingPlans" (name, description, monthly_price, yearly_price, features, sort_order, status, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())`,
         [
           plan.name,
           plan.description,
