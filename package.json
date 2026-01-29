@@ -23,6 +23,7 @@
     "db:migrate:hierarchy": "node scripts/migrate-department-hierarchy.js",
     "db:migrate:menus": "node scripts/migrate-menus.js",
     "db:migrate:payroll": "node scripts/migrate-payroll.js",
+    "db:sync": "node scripts/sync-db.js",
     "db:seed": "node scripts/seed.js",
     "db:seed:menus": "node scripts/seed-menus.js"
   },

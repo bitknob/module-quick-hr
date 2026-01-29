@@ -20,6 +20,36 @@ async function seed() {
 
     await client.query('BEGIN');
 
+    // Check if payment service tables exist, if not, sync them
+    const pricingPlansExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'PricingPlans'
+      );
+    `);
+
+    if (!pricingPlansExists.rows[0].exists) {
+      console.log('Payment service tables not found. Please run "npm run db:sync" first.');
+      console.log('Running: npm run db:sync');
+      
+      // Close the current connection before running sync
+      client.release();
+      
+      // Run sync script
+      const { execSync } = require('child_process');
+      try {
+        execSync('node scripts/sync-db.js', { stdio: 'inherit', cwd: process.cwd() });
+        console.log('Database synced successfully!');
+      } catch (error) {
+        console.error('Failed to sync database:', error);
+        process.exit(1);
+      }
+      
+      // Reconnect after sync
+      return seed(); // Restart seeding after sync
+    }
+
     // Create Quick HR company first (for super admin)
     let quickHrCompanyId = null;
     const quickHrCompany = await client.query('SELECT id FROM "Companies" WHERE code = $1', [
@@ -691,9 +721,42 @@ async function seedPricingPlans(client) {
     console.log('Seeding pricing plans...');
 
     // Clear existing pricing plans (cascade delete subscriptions and history)
-    await client.query('DELETE FROM "SubscriptionHistory"');
-    await client.query('DELETE FROM "Subscriptions"');
-    await client.query('DELETE FROM "PricingPlans"');
+    // Check if tables exist before deleting
+    const subscriptionHistoryExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'SubscriptionHistory'
+      );
+    `);
+    
+    const subscriptionsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'Subscriptions'
+      );
+    `);
+
+    if (subscriptionHistoryExists.rows[0].exists) {
+      await client.query('DELETE FROM "SubscriptionHistory"');
+    }
+    
+    if (subscriptionsExists.rows[0].exists) {
+      await client.query('DELETE FROM "Subscriptions"');
+    }
+    
+    const pricingPlansExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'PricingPlans'
+      );
+    `);
+
+    if (pricingPlansExists.rows[0].exists) {
+      await client.query('DELETE FROM "PricingPlans"');
+    }
 
     // Insert pricing plans
     const pricingPlans = [
