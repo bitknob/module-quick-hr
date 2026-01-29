@@ -72,6 +72,26 @@ async function syncDatabase() {
 
     console.log('Database tables created successfully!');
     
+    // Add missing columns if they don't exist
+    console.log('Checking for missing columns...');
+    
+    // Check if sort_order column exists in PricingPlans
+    const sortOrderExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'PricingPlans'
+        AND column_name = 'sort_order'
+      );
+    `);
+    
+    if (!sortOrderExists.rows[0].exists) {
+      console.log('Adding sort_order column to PricingPlans table...');
+      await client.query('ALTER TABLE "PricingPlans" ADD COLUMN sort_order INTEGER;');
+    }
+    
+    console.log('Database schema updated successfully!');
+    
   } catch (error) {
     console.error('Error syncing database:', error);
     throw error;
