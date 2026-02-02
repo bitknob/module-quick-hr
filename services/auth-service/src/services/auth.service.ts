@@ -348,11 +348,86 @@ export class AuthService {
       )) as any[];
 
       if (employee) {
-        console.log(
-          'Found employee with company email, creating user account for company email login'
-        );
+        console.log('Found employee with company email:', email);
+        console.log('Employee personal email:', employee.userEmail);
 
-        // Create user account for the employee using COMPANY EMAIL as login email
+        // Check if user exists with the personal email (subscription owner case)
+        const [existingUser] = (await sequelize.query(
+          'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber", "mustChangePassword" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
+          {
+            replacements: { email: employee.userEmail },
+            type: QueryTypes.SELECT,
+          }
+        )) as any[];
+
+        if (existingUser) {
+          console.log('Found existing user with personal email. Role:', existingUser.role);
+          
+          // This is a subscription owner trying to login with company email
+          // Allow them to login using their personal email credentials
+          if (existingUser.role === 'company_admin' || existingUser.role === 'provider_admin') {
+            console.log('Subscription owner logging in with company email. Redirecting to personal email credentials.');
+            
+            // Use the existing user account (with personal email)
+            const userData = existingUser;
+            
+            if (!userData.password) {
+              console.log('User has no password set');
+              throw new UnauthorizedError('Invalid email or password');
+            }
+
+            if (userData.isActive === false) {
+              console.log('User account is deactivated');
+              throw new UnauthorizedError('Account is deactivated');
+            }
+
+            const isPasswordValid = await this.comparePassword(password, userData.password);
+            console.log('Password validation result:', isPasswordValid);
+
+            if (!isPasswordValid) {
+              console.log('Password comparison failed');
+              throw new UnauthorizedError('Invalid email or password');
+            }
+
+            // Update lastLogin (fire and forget)
+            sequelize
+              .query('UPDATE "Users" SET "lastLogin" = NOW() WHERE id = :id', {
+                replacements: { id: userData.id },
+                type: QueryTypes.UPDATE,
+              })
+              .catch(() => {});
+
+            const payload: JWTPayload = {
+              userId: userData.id,
+              email: userData.email,
+              role: userData.role,
+              emailVerified: userData.emailVerified,
+            };
+
+            const accessToken = generateAccessToken(payload);
+            const refreshToken = generateRefreshToken({ userId: userData.id });
+
+            return {
+              user: {
+                id: userData.id,
+                email: userData.email,
+                phoneNumber: userData.phoneNumber,
+                role: userData.role,
+                emailVerified: userData.emailVerified,
+                phoneVerified: userData.phoneVerified,
+                isActive: userData.isActive,
+                mustChangePassword: userData.mustChangePassword || false,
+                password: '',
+              } as User,
+              accessToken,
+              refreshToken,
+            };
+          }
+        }
+
+        // Regular employee case - create user account for company email login
+        console.log('Creating user account for regular employee with company email');
+
         const temporaryPassword = this.generateTemporaryPassword();
         const hashedPassword = await this.hashPassword(temporaryPassword);
         const userId = uuidv4();
