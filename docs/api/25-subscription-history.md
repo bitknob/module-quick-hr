@@ -506,19 +506,19 @@ const getPaymentAnalytics = async (subscriptionId) => {
 
 ```bash
 # Get subscription history
-curl -X GET "http://localhost:9404/api/subscription-history/subscription/123" \
+curl -X GET "http://localhost:9400/api/subscription-history/subscription/123" \
   -H "Authorization: Bearer YOUR_TOKEN"
 
 # Get payment history
-curl -X GET "http://localhost:9404/api/subscription-history/subscription/123/payments?limit=10" \
+curl -X GET "http://localhost:9400/api/subscription-history/subscription/123/payments?limit=10" \
   -H "Authorization: Bearer YOUR_TOKEN"
 
 # Get company payment summary
-curl -X GET "http://localhost:9404/api/subscription-history/company/uuid/payment-summary" \
+curl -X GET "http://localhost:9400/api/subscription-history/company/uuid/payment-summary" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 
 # Get events by type
-curl -X GET "http://localhost:9404/api/subscription-history/subscription/123/events?eventType=payment_successful" \
+curl -X GET "http://localhost:9400/api/subscription-history/subscription/123/events?eventType=payment_successful" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

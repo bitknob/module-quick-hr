@@ -27,7 +27,8 @@ router.get(
     UserRole.HRBP,
     UserRole.COMPANY_ADMIN,
     UserRole.DEPARTMENT_HEAD,
-    UserRole.MANAGER
+    UserRole.MANAGER,
+    UserRole.EMPLOYEE
   ),
   getAllDepartments
 );
@@ -41,7 +42,8 @@ router.get(
     UserRole.HRBP,
     UserRole.COMPANY_ADMIN,
     UserRole.DEPARTMENT_HEAD,
-    UserRole.MANAGER
+    UserRole.MANAGER,
+    UserRole.EMPLOYEE
   ),
   getDepartment
 );
@@ -105,10 +107,10 @@ router.get(
     UserRole.HRBP,
     UserRole.COMPANY_ADMIN,
     UserRole.DEPARTMENT_HEAD,
-    UserRole.MANAGER
+    UserRole.MANAGER,
+    UserRole.EMPLOYEE
   ),
   getTopLevelDepartments
 );
 
 export default router;
-

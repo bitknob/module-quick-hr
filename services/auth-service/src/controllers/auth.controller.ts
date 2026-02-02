@@ -721,3 +721,43 @@ export const resendCredentials = async (
     next(error);
   }
 };
+
+
+/**
+ * Public role assignment for onboarding - assigns admin role to first user of a company
+ */
+export const assignAdminRoleOnboarding = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { userId, companyId } = req.body;
+
+    if (!userId || !companyId) {
+      return next(new ValidationError("User ID and Company ID are required"));
+    }
+
+    // For onboarding, assign company admin role (first subscriber gets full admin rights)
+    const user = await AuthService.assignUserRole(userId, UserRole.COMPANY_ADMIN, userId);
+
+    // Check if user is a Sequelize model instance or already a plain object
+    const plainUser = typeof user.get === "function" ? user.get({ plain: true }) : user;
+
+    ResponseFormatter.success(
+      res,
+      {
+        id: plainUser.id,
+        email: plainUser.email,
+        role: plainUser.role,
+        companyId: companyId,
+      },
+      "Admin role assigned successfully for onboarding"
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(new ValidationError(error.errors[0].message));
+    }
+    next(error);
+  }
+};

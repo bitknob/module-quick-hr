@@ -19,8 +19,12 @@ export class CompanyService {
     return await CompanyQueries.create(data);
   }
 
-  static async getAllCompanies(): Promise<Company[]> {
-    return await CompanyQueries.findAll();
+  static async getAllCompanies(options?: {
+    searchTerm?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<Company[]> {
+    return await CompanyQueries.findAll(options);
   }
 
   static async getCompanyById(id: string): Promise<Company> {

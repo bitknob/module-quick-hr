@@ -51,7 +51,8 @@ export const createDepartment = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { companyId, name, description, headId, parentDepartmentId, hasSubDepartments } = req.body;
+    const { companyId, name, description, headId, parentDepartmentId, hasSubDepartments } =
+      req.body;
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
@@ -59,8 +60,17 @@ export const createDepartment = async (
       return ResponseFormatter.error(res, 'Company ID and name are required', '', 400);
     }
 
-    if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== companyId) {
-      return ResponseFormatter.error(res, 'Access denied: Cannot create department in different company', '', 403);
+    if (
+      !AccessControl.canAccessAllCompanies(userRole) &&
+      userCompanyId &&
+      userCompanyId !== companyId
+    ) {
+      return ResponseFormatter.error(
+        res,
+        'Access denied: Cannot create department in different company',
+        '',
+        403
+      );
     }
 
     const department = await DepartmentService.createDepartment({
@@ -91,13 +101,17 @@ export const updateDepartment = async (
     const { name, description, headId, parentDepartmentId, hasSubDepartments } = req.body;
 
     const companyId = AccessControl.canAccessAllCompanies(userRole) ? undefined : userCompanyId;
-    const department = await DepartmentService.updateDepartment(id, {
-      name,
-      description,
-      headId,
-      parentDepartmentId,
-      hasSubDepartments,
-    }, companyId);
+    const department = await DepartmentService.updateDepartment(
+      id,
+      {
+        name,
+        description,
+        headId,
+        parentDepartmentId,
+        hasSubDepartments,
+      },
+      companyId
+    );
 
     ResponseFormatter.success(res, department, 'Department updated successfully');
   } catch (error) {
@@ -151,18 +165,29 @@ export const getTopLevelDepartments = async (
     const userRole = req.user?.role as UserRole;
     const userCompanyId = req.employee?.companyId;
 
-    if (!companyId) {
+    // Use provided companyId or fallback to user's companyId
+    const targetCompanyId = (companyId as string) || userCompanyId;
+
+    if (!targetCompanyId) {
       return ResponseFormatter.error(res, 'Company ID is required', '', 400);
     }
 
-    if (!AccessControl.canAccessAllCompanies(userRole) && userCompanyId && userCompanyId !== companyId) {
-      return ResponseFormatter.error(res, 'Access denied: Cannot access departments from different company', '', 403);
+    if (
+      !AccessControl.canAccessAllCompanies(userRole) &&
+      userCompanyId &&
+      userCompanyId !== targetCompanyId
+    ) {
+      return ResponseFormatter.error(
+        res,
+        'Access denied: Cannot access departments from different company',
+        '',
+        403
+      );
     }
 
-    const departments = await DepartmentService.getTopLevelDepartments(companyId as string);
+    const departments = await DepartmentService.getTopLevelDepartments(targetCompanyId);
     ResponseFormatter.success(res, departments, 'Top-level departments retrieved successfully');
   } catch (error) {
     next(error);
   }
 };
-

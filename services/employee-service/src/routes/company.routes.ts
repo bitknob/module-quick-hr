@@ -15,6 +15,10 @@ const { authenticate, authorize } = getAuthMiddleware();
 
 const router = Router();
 
+// Public onboarding route - no authentication required
+router.post('/onboarding', createCompany);
+
+// Authenticated routes
 router.use(authenticate);
 router.use(enrichEmployeeContext);
 

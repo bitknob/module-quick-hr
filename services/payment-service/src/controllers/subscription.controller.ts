@@ -15,7 +15,13 @@ const CreateSubscriptionSchema = z.object({
   pricingPlanId: z.number().int().positive('Invalid pricing plan ID'),
   customerData: z.object({
     name: z.string().min(1, 'Customer name is required'),
-    email: z.string().email('Valid email is required'),
+    personalEmail: z.string().email('Valid personal email is required'),
+    companyEmail: z.string().email('Valid company email is required'),
+    companyName: z.string().min(2, 'Company name is required'),
+    companyCode: z.string().min(10, 'Company code must be at least 10 characters long'),
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters long'),
     contact: z.string().optional(),
   }),
   interval: z.enum(['monthly', 'yearly']).default('monthly'),
@@ -39,54 +45,11 @@ export class SubscriptionController {
 
       let companyId = validatedData.companyId;
 
-      // Auto-generate company if companyId is not provided or invalid
-      if (!companyId || !companyId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        companyId = uuidv4();
-        const companyName = validatedData.companyName || validatedData.customerData.name + "'s Company";
-        const companyCode = 'COMP' + Date.now().toString().slice(-6);
-
-        // Create company in database
-        try {
-          await sequelize.query(
-            `INSERT INTO "Companies" (id, name, code, description, status, "createdAt", "updatedAt")
-             VALUES (:id, :name, :code, :description, 'active', NOW(), NOW())`,
-            {
-              replacements: {
-                id: companyId,
-                name: companyName,
-                code: companyCode,
-                description: validatedData.billingAddress || 'Auto-generated company',
-              },
-            }
-          );
-          logger.info(`Auto-generated company: ${companyName} (${companyId})`);
-        } catch (error) {
-          logger.error('Error creating company:', error);
-          return ResponseFormatter.error(res, 'Failed to create company', '', 500);
-        }
-      }
-
-      // Check if company already has an active subscription
-      const existingSubscription = await Subscription.findOne({
-        where: {
-          companyId: companyId,
-          isActive: true,
-          status: ['trial', 'active'],
-        },
-      });
-
-      if (existingSubscription) {
-        return ResponseFormatter.error(
-          res,
-          'Company already has an active subscription',
-          '',
-          409
-        );
-      }
+      // Company, user, and employee are created automatically in the service
+      // No need to check for existing subscriptions as the service handles it
 
       // Create subscription with trial
       const result = await razorpayService.createSubscriptionWithTrial(
-        companyId,
         validatedData.pricingPlanId,
         validatedData.customerData,
         validatedData.interval
@@ -102,7 +65,7 @@ export class SubscriptionController {
           paymentLink: result.paymentLink,
           trialDays: 14,
           trialEndDate: result.subscription.trialEndDate,
-          companyId: companyId,
+          companyId: result.subscription.companyId,
         },
         'Subscription created with 14-day trial'
       );
@@ -118,9 +81,10 @@ export class SubscriptionController {
           400
         );
       }
-
+      
       logger.error('Error creating subscription:', error);
-      ResponseFormatter.error(res, 'Failed to create subscription', '', 500);
+      console.error('Detailed error:', error);
+      return ResponseFormatter.error(res, 'Failed to create subscription', (error as any).message || 'Unknown error', 500);
     }
   }
 

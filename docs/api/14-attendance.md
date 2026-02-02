@@ -9,6 +9,7 @@ The Attendance Management API provides comprehensive attendance tracking with ch
 ## Overview
 
 The attendance system supports:
+
 - Daily attendance tracking with check-in/check-out timestamps
 - Multiple attendance statuses (present, absent, late, half_day)
 - Attendance statistics and workday calculations
@@ -42,6 +43,7 @@ Authorization: Bearer <access_token>
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `manager`
 
 **Request Body:**
+
 ```json
 {
   "employeeId": "employee_uuid",
@@ -55,6 +57,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Field Descriptions:**
+
 - `employeeId` (string, required) - Employee UUID
 - `companyId` (string, required) - Company UUID
 - `date` (string/date, required) - Attendance date (YYYY-MM-DD)
@@ -64,6 +67,7 @@ Authorization: Bearer <access_token>
 - `notes` (string, optional) - Additional notes
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -87,6 +91,7 @@ Authorization: Bearer <access_token>
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/attendance \
   -H "Authorization: Bearer <access_token>" \
@@ -100,6 +105,7 @@ curl -X POST http://localhost:9400/api/attendance \
 ```
 
 **Error Responses:**
+
 - `409 Conflict` - Attendance record already exists for this date
 - `400 Bad Request` - Check-out time before check-in time
 - `404 Not Found` - Employee not found
@@ -114,12 +120,15 @@ curl -X POST http://localhost:9400/api/attendance \
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `id` (string, required) - Attendance record UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -150,6 +159,7 @@ curl -X POST http://localhost:9400/api/attendance \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/attendance/{attendance_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>"
@@ -166,12 +176,15 @@ curl -X GET http://localhost:9400/api/attendance/{attendance_id}?companyId=compa
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `manager`
 
 **Path Parameters:**
+
 - `id` (string, required) - Attendance record UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Request Body:**
+
 ```json
 {
   "checkIn": "2024-01-15T09:15:00.000Z",
@@ -182,6 +195,7 @@ curl -X GET http://localhost:9400/api/attendance/{attendance_id}?companyId=compa
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -201,6 +215,7 @@ curl -X GET http://localhost:9400/api/attendance/{attendance_id}?companyId=compa
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/attendance/{attendance_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>" \
@@ -222,12 +237,15 @@ curl -X PUT http://localhost:9400/api/attendance/{attendance_id}?companyId=compa
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Path Parameters:**
+
 - `id` (string, required) - Attendance record UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -240,6 +258,7 @@ curl -X PUT http://localhost:9400/api/attendance/{attendance_id}?companyId=compa
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=company_uuid \
   -H "Authorization: Bearer <access_token>"
@@ -255,15 +274,18 @@ curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=co
 **Authentication:** Required
 
 **Enhanced Features:**
+
 - **Automatic Company Detection:** If `companyId` is "undefined" or not provided, the system automatically finds the company ID from the employee record
 - **Smart Employee Lookup:** Supports finding employees by user ID (from Users table) or email address
 - **Company Email Support:** Works seamlessly with users who login using company email
 
 **Path Parameters:**
+
 - `employeeId` (string, required) - Employee UUID or user ID (from Users table)
 - `companyId` (string, optional) - Company UUID. If "undefined" or not provided, the system will automatically detect it from the employee record
 
 **Request Body (optional):**
+
 ```json
 {
   "checkInTime": "2024-01-15T09:00:00.000Z"
@@ -273,11 +295,13 @@ curl -X DELETE http://localhost:9400/api/attendance/{attendance_id}?companyId=co
 **Enhanced Employee Resolution:**
 
 The endpoint uses a smart resolution system:
+
 1. **Direct Employee Lookup:** First tries to find employee by the provided `employeeId`
 2. **User Email Lookup:** If not found, uses the current user's email to find the employee record
 3. **Company ID Detection:** Automatically extracts company ID from the found employee record
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -298,6 +322,7 @@ The endpoint uses a smart resolution system:
 ```
 
 **cURL - With Company ID:**
+
 ```bash
 curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/{company_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -305,6 +330,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/{company
 ```
 
 **cURL - Automatic Company Detection:**
+
 ```bash
 curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/undefined \
   -H "Authorization: Bearer <access_token>" \
@@ -313,6 +339,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{employee_id}/undefine
 ```
 
 **cURL - Using User ID:**
+
 ```bash
 curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
   -H "Authorization: Bearer <access_token>" \
@@ -321,6 +348,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
 ```
 
 **Error Responses:**
+
 - `409 Conflict` - Already checked in today
 - `400 Bad Request` - Company ID is required and could not be determined
 - `404 Not Found` - Employee not found
@@ -332,6 +360,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
 3. **User ID Check-in:** Use user ID (from JWT token) instead of employee ID for simplified integration
 
 **Notes:**
+
 - The automatic company detection is particularly useful for frontend applications that may not have the company ID readily available
 - When using user ID instead of employee ID, the system automatically resolves the correct employee record
 - This feature enhances compatibility with the company email login system
@@ -346,10 +375,12 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `employeeId` (string, required) - Employee UUID
 - `companyId` (string, required) - Company UUID
 
 **Request Body (optional):**
+
 ```json
 {
   "checkOutTime": "2024-01-15T18:00:00.000Z"
@@ -357,6 +388,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
 ```
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -373,6 +405,7 @@ curl -X POST http://localhost:9400/api/attendance/checkin/{user_id}/undefined \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/attendance/checkout/{employee_id}/{company_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -380,6 +413,7 @@ curl -X POST http://localhost:9400/api/attendance/checkout/{employee_id}/{compan
 ```
 
 **Error Responses:**
+
 - `404 Not Found` - No check-in record found for today
 - `409 Conflict` - Already checked out today
 - `400 Bad Request` - Check-out time before check-in time
@@ -394,14 +428,17 @@ curl -X POST http://localhost:9400/api/attendance/checkout/{employee_id}/{compan
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `employeeId` (string, required) - Employee UUID
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Company ID for access control
 - `startDate` (string, optional) - Start date filter (YYYY-MM-DD)
 - `endDate` (string, optional) - End date filter (YYYY-MM-DD)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -423,6 +460,7 @@ curl -X POST http://localhost:9400/api/attendance/checkout/{employee_id}/{compan
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/attendance/employee/{employee_id}?startDate=2024-01-01&endDate=2024-01-31" \
   -H "Authorization: Bearer <access_token>"
@@ -438,14 +476,17 @@ curl -X GET "http://localhost:9400/api/attendance/employee/{employee_id}?startDa
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `companyId` (string, required) - Company UUID
 
 **Query Parameters:**
+
 - `startDate` (string, optional) - Start date filter (YYYY-MM-DD)
 - `endDate` (string, optional) - End date filter (YYYY-MM-DD)
 - `status` (string, optional) - Filter by status: `present`, `absent`, `late`, `half_day`
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -471,6 +512,7 @@ curl -X GET "http://localhost:9400/api/attendance/employee/{employee_id}?startDa
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/attendance/company/{company_id}?startDate=2024-01-01&endDate=2024-01-31&status=present" \
   -H "Authorization: Bearer <access_token>"
@@ -486,14 +528,17 @@ curl -X GET "http://localhost:9400/api/attendance/company/{company_id}?startDate
 **Authentication:** Required
 
 **Path Parameters:**
+
 - `employeeId` (string, required) - Employee UUID
 - `companyId` (string, required) - Company UUID
 
 **Query Parameters:**
+
 - `month` (number, required) - Month (1-12)
 - `year` (number, required) - Year (e.g., 2024)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -513,7 +558,8 @@ curl -X GET "http://localhost:9400/api/attendance/company/{company_id}?startDate
 ```
 
 **Field Descriptions:**
-- `workingDays` - Total working days in the month (excluding weekends)
+
+- `workingDays` - Total working days in the month (excluding weekends) **from the employee's hire date onwards**
 - `presentDays` - Days marked as present (including leave days)
 - `absentDays` - Days marked as absent
 - `leaveDays` - Days on approved leave
@@ -521,16 +567,20 @@ curl -X GET "http://localhost:9400/api/attendance/company/{company_id}?startDate
 - `halfDayDays` - Days marked as half day
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/attendance/stats/{employee_id}/{company_id}?month=1&year=2024" \
   -H "Authorization: Bearer <access_token>"
 ```
 
-**Notes:**
-- This endpoint calculates workday statistics similar to the payroll service
+**Important Notes:**
+
+- **Hire Date Consideration:** Working days are calculated from the employee's hire date. If an employee was hired mid-month, only days from the hire date onwards are counted as working days.
+- **Example:** If an employee was hired on January 15, 2024, and you request stats for January 2024, `workingDays` will only count weekdays from January 15-31, not the entire month.
 - Weekends (Saturday and Sunday) are excluded from working days
 - Approved leave days are counted as present days
 - Statistics integrate with leave management for accurate calculations
+- This endpoint calculates workday statistics similar to the payroll service
 
 ---
 
@@ -542,6 +592,7 @@ curl -X GET "http://localhost:9400/api/attendance/stats/{employee_id}/{company_i
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Filter by company
 - `employeeId` (string, optional) - Filter by employee
 - `startDate` (string, optional) - Start date filter (YYYY-MM-DD)
@@ -551,6 +602,7 @@ curl -X GET "http://localhost:9400/api/attendance/stats/{employee_id}/{company_i
 - `limit` (number, optional) - Items per page (default: 20)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -576,6 +628,7 @@ curl -X GET "http://localhost:9400/api/attendance/stats/{employee_id}/{company_i
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/attendance/search?companyId=company_uuid&startDate=2024-01-01&endDate=2024-01-31&page=1&limit=20" \
   -H "Authorization: Bearer <access_token>"
@@ -593,9 +646,9 @@ curl -X GET "http://localhost:9400/api/attendance/search?companyId=company_uuid&
 ## Integration with Payroll
 
 The attendance statistics calculated by this service are used by the payroll service for:
+
 - Calculating pro-rata salary based on working days
 - Determining loss of pay days
 - Generating accurate payslips with attendance breakdown
 
 The workday calculation logic matches the payroll service implementation, ensuring consistency across the system.
-

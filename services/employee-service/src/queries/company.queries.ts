@@ -1,10 +1,52 @@
 import { Company } from '../models/Company.model';
+import { Op } from 'sequelize';
 
 export class CompanyQueries {
-  static async findAll(): Promise<Company[]> {
-    return await Company.findAll({
+  static async findAll(options?: {
+    searchTerm?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<Company[]> {
+    const whereClause: any = {};
+    
+    // Handle status filter
+    if (options?.status) {
+      whereClause.status = options.status;
+    }
+    
+    // Handle search term with case-insensitive matching and prioritization
+    if (options?.searchTerm) {
+      const searchTerm = options.searchTerm.trim();
+      
+      // Try exact case-sensitive match first
+      const exactMatch = await Company.findOne({
+        where: { 
+          name: searchTerm,
+          ...(options?.status && { status: options.status })
+        }
+      });
+      
+      if (exactMatch) {
+        return [exactMatch]; // Return only the exact match
+      }
+      
+      // If no exact match, try case-insensitive partial match
+      whereClause.name = {
+        [Op.iLike]: `%${searchTerm}%`
+      };
+    }
+    
+    const queryOptions: any = {
+      where: whereClause,
       order: [['name', 'ASC']],
-    });
+    };
+    
+    // Handle limit
+    if (options?.limit && options.limit > 0) {
+      queryOptions.limit = options.limit;
+    }
+    
+    return await Company.findAll(queryOptions);
   }
 
   static async findById(id: string): Promise<Company | null> {

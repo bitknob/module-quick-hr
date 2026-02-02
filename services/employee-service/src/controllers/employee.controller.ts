@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service';
 import {
   AccessControl,
@@ -456,6 +456,37 @@ export const bulkAssignManager = async (
         'Partial success in assigning managers'
       );
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOnboardingEmployee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { userId, companyId, department, designation, workLocation, employmentType, dateOfJoining, workEmail, workPhone, firstName, lastName, userEmail } = req.body;
+
+    if (!userId || !companyId || !firstName || !lastName || !userEmail) {
+      return ResponseFormatter.error(res, 'User ID, Company ID, First Name, Last Name, and User Email are required', '', 400);
+    }
+
+    const employee = await EmployeeService.createEmployee({
+      userEmail,
+      companyId,
+      employeeId: userId,
+      firstName,
+      lastName,
+      userCompEmail: workEmail || userEmail,
+      phoneNumber: workPhone,
+      jobTitle: designation || 'Company Administrator',
+      department: department || 'Management',
+      hireDate: new Date(dateOfJoining || new Date()),
+    });
+
+    ResponseFormatter.success(res, employee, 'Employee created successfully');
   } catch (error) {
     next(error);
   }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createEmployee,
+  createOnboardingEmployee,
   getEmployee,
   getCurrentEmployee,
   updateEmployee,
@@ -26,6 +27,10 @@ const { authenticate, authorize } = getAuthMiddleware();
 
 const router = Router();
 
+// Public onboarding route - no authentication required
+router.post('/onboarding', createOnboardingEmployee);
+
+// Authenticated routes
 router.use(authenticate);
 router.use(enrichEmployeeContext);
 

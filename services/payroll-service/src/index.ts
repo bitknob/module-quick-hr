@@ -38,8 +38,23 @@ const startServer = async () => {
     setRequestLogger(async (log: any) => {
       try {
         await RequestLogModel.create(log);
-      } catch (error) {
-        logger.error('Failed to save request log:', error);
+      } catch (error: any) {
+        // If foreign key constraint error on userId, retry with null userId
+        const isForeignKeyError = error?.name === 'SequelizeForeignKeyConstraintError' || 
+                                error?.code === '23503' ||
+                                (error?.original?.code === '23503') ||
+                                (error?.message?.includes('foreign key constraint') && 
+                                 error?.message?.includes('userId'));
+        
+        if (isForeignKeyError) {
+          try {
+            await RequestLogModel.create({ ...log, userId: null });
+          } catch (retryError) {
+            logger.error('Failed to save request log after retry:', retryError);
+          }
+        } else {
+          logger.error('Failed to save request log:', error);
+        }
       }
     }, 'payroll-service');
     

@@ -11,6 +11,7 @@ import {
   refreshToken,
   getCurrentUser,
   assignUserRole,
+  assignAdminRoleOnboarding,
   getUserRole,
   getUserRoleByEmail,
   createUserForEmployee,
@@ -26,6 +27,9 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.get('/verify-email', verifyEmail);
 router.get('/verify-email-page', serveVerificationPage);
+
+// Public onboarding role assignment
+router.post('/assign-admin-role-onboarding', assignAdminRoleOnboarding);
 router.post('/resend-verification', resendVerificationEmail);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

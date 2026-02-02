@@ -30,7 +30,13 @@ const startServer = async () => {
         await RequestLogModel.create(log);
       } catch (error: any) {
         // If foreign key constraint error on userId, retry with null userId
-        if (error?.name === 'SequelizeForeignKeyConstraintError' && error?.fields?.includes('userId')) {
+        const isForeignKeyError = error?.name === 'SequelizeForeignKeyConstraintError' || 
+                                error?.code === '23503' ||
+                                (error?.original?.code === '23503') ||
+                                (error?.message?.includes('foreign key constraint') && 
+                                 error?.message?.includes('userId'));
+        
+        if (isForeignKeyError) {
           try {
             await RequestLogModel.create({ ...log, userId: null });
           } catch (retryError) {
@@ -49,11 +55,13 @@ const startServer = async () => {
     const pricingPlanRoutes = (await import('./routes/pricingPlan.routes')).default;
     const subscriptionRoutes = (await import('./routes/subscription.routes')).default;
     const subscriptionHistoryRoutes = (await import('./routes/subscriptionHistory.routes')).default;
+    const onboardingRoutes = (await import('./routes/onboarding.routes')).default;
 
     app.use('/api/payments', paymentRoutes);
     app.use('/api/pricing-plans', pricingPlanRoutes);
     app.use('/api/subscriptions', subscriptionRoutes);
     app.use('/api/subscription-history', subscriptionHistoryRoutes);
+    app.use('/api/onboarding', onboardingRoutes);
 
     app.get('/health', (req, res) => {
       ResponseFormatter.success(

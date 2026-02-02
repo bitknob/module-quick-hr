@@ -41,6 +41,42 @@ export class AuthService {
     return await bcrypt.compare(password, hash);
   }
 
+  static isPersonalEmail(domain: string): boolean {
+    const personalEmailDomains = [
+      // Major providers
+      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+      'aol.com', 'icloud.com', 'mail.com', 'gmx.com',
+      'protonmail.com', 'tutanota.com', 'yandex.com',
+      'zoho.com', 'fastmail.com',
+      
+      // Regional providers
+      'rediffmail.com', 'sify.com', 'vsnl.net',
+      'yahoo.co.in', 'gmail.co.in', 'hotmail.co.in',
+      'outlook.co.in', 'live.com', 'msn.com',
+      
+      // Other common personal providers
+      'inbox.com', 'mail.ru', 'rambler.ru',
+      'qq.com', '163.com', '126.com',
+      'sina.com', 'sohu.com', 'foxmail.com',
+      
+      // European providers
+      'web.de', 'gmx.de', 't-online.de',
+      'orange.fr', 'sfr.fr', 'laposte.net',
+      'libero.it', 'tin.it', 'virgilio.it',
+      'arcor.de', 'freenet.de',
+      
+      // UK providers
+      'sky.com', 'fsmail.net',
+      'talktalk.co.uk', 'btinternet.com',
+      
+      // Others
+      'comcast.net', 'verizon.net', 'att.net',
+      'cox.net', 'earthlink.net'
+    ];
+    
+    return personalEmailDomains.includes(domain);
+  }
+
   static generateVerificationToken(): string {
     return crypto.randomBytes(32).toString('hex');
   }
@@ -283,6 +319,9 @@ export class AuthService {
     email: string,
     password: string
   ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    const isPersonalEmail = this.isPersonalEmail(emailDomain);
+    
     // First try to find user by the provided email (could be personal or company)
     const [users] = (await sequelize.query(
       'SELECT id, email, password, "isActive", role, "emailVerified", "phoneVerified", "phoneNumber", "mustChangePassword" FROM "Users" WHERE LOWER(email) = LOWER(:email) LIMIT 1',
@@ -376,6 +415,21 @@ export class AuthService {
     if (!userData.password) {
       console.log('User has no password set');
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    // Check if user is trying to login with appropriate email type
+    if (userData.role === 'employee' && isPersonalEmail) {
+      // Regular employees must login with company email
+      throw new UnauthorizedError('Employees must login with their company email address. Personal emails are not allowed for employee accounts.');
+    }
+
+    // For subscription customers (company_admin, provider_admin, etc.), allow personal email login
+    // The subscription creation process already validates the user has an active subscription
+    if (userData.role !== 'employee' && isPersonalEmail) {
+      // User is a subscription customer (company_admin, etc.) with personal email
+      // Allow login since subscription creation already validated everything
+      console.log('Allowing personal email login for subscription customer:', email, 'Role:', userData.role);
+      // No additional checks needed - subscription creation process handles validation
     }
 
     if (userData.isActive === false) {

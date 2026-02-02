@@ -8,8 +8,10 @@ const { authenticate, authorize } = getAuthMiddleware();
 // Public routes - get subscription status
 router.get('/status/:companyId', SubscriptionController.getSubscriptionStatus);
 
+// Public routes - subscription creation for new users
+router.post('/', SubscriptionController.createSubscription);
+
 // Protected routes - require authentication
-router.post('/', authenticate, SubscriptionController.createSubscription);
 router.get('/:companyId', authenticate, SubscriptionController.getSubscription);
 router.put('/:companyId', authenticate, SubscriptionController.updateSubscription);
 router.delete('/:companyId', authenticate, authorize('admin'), SubscriptionController.cancelSubscription);

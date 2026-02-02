@@ -9,7 +9,14 @@ export const getAllCompanies = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const companies = await CompanyService.getAllCompanies();
+    const { searchTerm, status, limit = 20 } = req.query;
+    
+    const companies = await CompanyService.getAllCompanies({
+      searchTerm: searchTerm as string,
+      status: status as string,
+      limit: parseInt(limit as string) || 20
+    });
+    
     ResponseFormatter.success(res, companies, 'Companies retrieved successfully');
   } catch (error) {
     next(error);

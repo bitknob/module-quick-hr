@@ -127,8 +127,40 @@ export class AttendanceQueries {
     lateDays: number;
     halfDayDays: number;
   }> {
+    // Get employee's hire date
+    const employee = await Employee.findOne({
+      where: { id: employeeId, companyId },
+      attributes: ['hireDate'],
+    });
+
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
+
+    // Determine the actual start date for counting (hire date or month start, whichever is later)
+    const hireDate = employee.hireDate ? new Date(employee.hireDate) : null;
+    let countStartDate = startDate;
+
+    if (hireDate && hireDate > startDate) {
+      // If hired after the month started, start counting from hire date
+      countStartDate = new Date(hireDate);
+      countStartDate.setHours(0, 0, 0, 0);
+    }
+
+    // If hire date is after the month ends, no working days in this month
+    if (hireDate && hireDate > endDate) {
+      return {
+        workingDays: 0,
+        presentDays: 0,
+        absentDays: 0,
+        leaveDays: 0,
+        lateDays: 0,
+        halfDayDays: 0,
+      };
+    }
 
     const attendanceRecords = await sequelize.query(
       `SELECT status, date 
@@ -156,20 +188,31 @@ export class AttendanceQueries {
       }
     );
 
-    const totalDays = endDate.getDate();
+    let workingDays = 0;
     let presentDays = 0;
     let absentDays = 0;
     let leaveDays = 0;
     let lateDays = 0;
     let halfDayDays = 0;
 
+    const totalDays = endDate.getDate();
+
     for (let day = 1; day <= totalDays; day++) {
       const currentDate = new Date(year, month - 1, day);
       const dayOfWeek = currentDate.getDay();
 
+      // Skip weekends
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         continue;
       }
+
+      // Skip days before hire date
+      if (currentDate < countStartDate) {
+        continue;
+      }
+
+      // This is a working day (weekday after hire date)
+      workingDays++;
 
       const attendance = (attendanceRecords as any[]).find((a: any) => {
         const attDate = new Date(a.date);
@@ -203,7 +246,7 @@ export class AttendanceQueries {
     }
 
     return {
-      workingDays: totalDays,
+      workingDays,
       presentDays,
       absentDays,
       leaveDays,
@@ -262,4 +305,3 @@ export class AttendanceQueries {
     return { rows, count };
   }
 }
-

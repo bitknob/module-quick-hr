@@ -38,7 +38,7 @@ GET /api/pricing-plans?activeOnly=false
   "response": {
     "pricingPlans": [
       {
-        "id": 1,
+        "id": 28,
         "name": "Starter",
         "description": "Perfect for small teams getting started with HR management",
         "monthlyPrice": 2499,
@@ -91,7 +91,7 @@ GET /api/pricing-plans?activeOnly=false
         "updatedAt": "2024-01-01T00:00:00.000Z"
       },
       {
-        "id": 2,
+        "id": 29,
         "name": "Professional",
         "description": "For growing companies that need more power and flexibility",
         "monthlyPrice": 6499,
@@ -144,7 +144,7 @@ GET /api/pricing-plans?activeOnly=false
         "updatedAt": "2024-01-01T00:00:00.000Z"
       },
       {
-        "id": 3,
+        "id": 30,
         "name": "Enterprise",
         "description": "For large organizations with complex HR requirements",
         "monthlyPrice": 16499,
@@ -555,13 +555,13 @@ const createPricingPlan = async (planData) => {
 
 ```bash
 # Get all pricing plans
-curl -X GET "http://localhost:9404/api/pricing-plans"
+curl -X GET "http://localhost:9400/api/pricing-plans"
 
 # Get specific pricing plan
-curl -X GET "http://localhost:9404/api/pricing-plans/1"
+curl -X GET "http://localhost:9400/api/pricing-plans/28"
 
 # Create pricing plan (admin)
-curl -X POST "http://localhost:9404/api/pricing-plans" \
+curl -X POST "http://localhost:9400/api/pricing-plans" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
@@ -578,7 +578,7 @@ curl -X POST "http://localhost:9404/api/pricing-plans" \
   }'
 
 # Update pricing plan (admin)
-curl -X PUT "http://localhost:9404/api/pricing-plans/1" \
+curl -X PUT "http://localhost:9400/api/pricing-plans/28" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
@@ -587,11 +587,11 @@ curl -X PUT "http://localhost:9404/api/pricing-plans/1" \
   }'
 
 # Delete pricing plan (admin)
-curl -X DELETE "http://localhost:9404/api/pricing-plans/1" \
+curl -X DELETE "http://localhost:9400/api/pricing-plans/28" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 
 # Toggle pricing plan status (admin)
-curl -X PATCH "http://localhost:9404/api/pricing-plans/1/toggle" \
+curl -X PATCH "http://localhost:9400/api/pricing-plans/28/toggle" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 

@@ -2,10 +2,16 @@
 
 [← Back to API Documentation Index](./README.md)
 
-
 Base Path: `/api/departments`
 
 All department endpoints require authentication. Departments are company-scoped - each department belongs to a specific company.
+
+**Employee Access:**
+
+- Regular employees can now view departments in their company
+- Company filtering is automatic - employees only see departments from their own company
+- No need to pass `companyId` parameter for company-scoped users (employees, company_admin, etc.)
+- Super admins and provider-level users can access all companies by providing `companyId`
 
 ### 1. Get All Departments
 
@@ -13,12 +19,14 @@ All department endpoints require authentication. Departments are company-scoped 
 **URL:** `/api/departments`  
 **Full URL:** `http://localhost:9400/api/departments?companyId=company-uuid`  
 **Authentication:** Required  
-**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`, `employee`
 
 **Query Parameters:**
+
 - `companyId` (string, optional) - Filter departments by company ID. If not provided and user is company-scoped, automatically filters by user's company.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -50,6 +58,7 @@ All department endpoints require authentication. Departments are company-scoped 
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
   -H "Authorization: Bearer <access_token>"
@@ -63,13 +72,15 @@ curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
 **URL:** `/api/departments/:id`  
 **Full URL:** `http://localhost:9400/api/departments/{department_id}`  
 **Authentication:** Required  
-**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`  
-**Access Control:** Company-scoped users can only access departments from their own company
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`, `employee`  
+**Access Control:** Company-scoped users (including employees) can only access departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -90,12 +101,14 @@ curl -X GET "http://localhost:9400/api/departments?companyId=company-uuid" \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `403` - Forbidden (insufficient permissions or cannot access different company)
 
@@ -110,6 +123,7 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
 **Request Body:**
+
 ```json
 {
   "companyId": "company-uuid",
@@ -122,16 +136,19 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 ```
 
 **Required Fields:**
+
 - `companyId` (string, required) - Company UUID that the department belongs to
 - `name` (string, required) - Department name (must be unique within the company)
 
 **Optional Fields:**
+
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
 - `parentDepartmentId` (string, optional) - UUID of the parent department if this is a sub-department
 - `hasSubDepartments` (boolean, optional) - Indicates if this department has sub-departments (automatically set when sub-departments are created)
 
 **Response (201):**
+
 ```json
 {
   "header": {
@@ -152,6 +169,7 @@ curl -X GET http://localhost:9400/api/departments/{department_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X POST http://localhost:9400/api/departments \
   -H "Authorization: Bearer <access_token>" \
@@ -164,6 +182,7 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **Error Responses:**
+
 - `400` - Bad Request (missing required fields: companyId or name)
 - `409` - Conflict (department name already exists in this company)
 - `403` - Forbidden (insufficient permissions or cannot create department in different company)
@@ -180,9 +199,11 @@ curl -X POST http://localhost:9400/api/departments \
 **Access Control:** Company-scoped users can only update departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Request Body:**
+
 ```json
 {
   "name": "Engineering Updated",
@@ -194,6 +215,7 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **All Fields are Optional:**
+
 - `name` (string, optional) - Department name (must be unique within the company if changed)
 - `description` (string, optional) - Department description
 - `headId` (string, optional) - UUID of the employee who is the department head
@@ -201,6 +223,7 @@ curl -X POST http://localhost:9400/api/departments \
 - `hasSubDepartments` (boolean, optional) - Indicates if this department has sub-departments (automatically managed)
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -221,6 +244,7 @@ curl -X POST http://localhost:9400/api/departments \
 ```
 
 **cURL:**
+
 ```bash
 curl -X PUT http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>" \
@@ -232,6 +256,7 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `409` - Conflict (department name already exists in this company if name is changed)
 - `403` - Forbidden (insufficient permissions or cannot update different company)
@@ -248,9 +273,11 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 **Access Control:** Company-scoped users can only delete departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -263,12 +290,14 @@ curl -X PUT http://localhost:9400/api/departments/{department_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X DELETE http://localhost:9400/api/departments/{department_id} \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (department not found)
 - `403` - Forbidden (insufficient permissions or cannot delete different company)
 
@@ -286,9 +315,11 @@ curl -X DELETE http://localhost:9400/api/departments/{department_id} \
 **Access Control:** Company-scoped users can only access departments from their own company
 
 **Path Parameters:**
+
 - `id` (string, required) - Department UUID
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -313,12 +344,14 @@ curl -X DELETE http://localhost:9400/api/departments/{department_id} \
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET http://localhost:9400/api/departments/{department_id}/sub-departments \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
+
 - `404` - Not Found (parent department not found)
 - `403` - Forbidden (insufficient permissions or cannot access different company)
 
@@ -330,12 +363,14 @@ curl -X GET http://localhost:9400/api/departments/{department_id}/sub-department
 **URL:** `/api/departments/top-level/list`  
 **Full URL:** `http://localhost:9400/api/departments/top-level/list?companyId=company-uuid`  
 **Authentication:** Required  
-**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`
+**Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`, `department_head`, `manager`, `employee`
 
 **Query Parameters:**
-- `companyId` (string, required) - Company UUID to filter top-level departments
+
+- `companyId` (string, optional) - Company UUID to filter top-level departments. If not provided, automatically uses the signed-in employee's company ID.
 
 **Response (200):**
+
 ```json
 {
   "header": {
@@ -360,17 +395,53 @@ curl -X GET http://localhost:9400/api/departments/{department_id}/sub-department
 ```
 
 **cURL:**
+
 ```bash
 curl -X GET "http://localhost:9400/api/departments/top-level/list?companyId=company-uuid" \
   -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Responses:**
-- `400` - Bad Request (companyId is required)
+
+- `400` - Bad Request (companyId is required and user has no associated company)
 - `403` - Forbidden (insufficient permissions or cannot access different company)
 
 **Notes:**
+
 - Returns only departments that have no parent department (top-level departments)
 - Useful for building department hierarchy trees
+- For employees and company-scoped users, companyId is automatically set to their company if not provided
+- Super admins and provider-level users must provide companyId explicitly
+
+---
+
+## Practical Examples for Employees
+
+### Example 1: Get All Departments in My Company
+
+As an employee, you don't need to know your company ID. Just call the endpoint:
+
+```bash
+curl -X GET "http://localhost:9400/api/departments" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### Example 2: Get Top-Level Departments
+
+Useful for dropdown menus or department selection:
+
+```bash
+curl -X GET "http://localhost:9400/api/departments/top-level/list" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### Example 3: Get Specific Department Details
+
+If you know the department ID:
+
+```bash
+curl -X GET "http://localhost:9400/api/departments/dept-uuid-123" \
+  -H "Authorization: Bearer <your_token>"
+```
 
 ---

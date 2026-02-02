@@ -14,10 +14,35 @@ All company endpoints require authentication.
 **Authentication:** Required  
 **Required Roles:** `super_admin`, `provider_admin`, `provider_hr_staff`, `hrbp`, `company_admin`
 
+**Query Parameters (Optional):**
+
+- `searchTerm` (string) - Search companies by name with intelligent matching
+- `status` (string) - Filter by company status (`active`, `inactive`)
+- `limit` (number) - Maximum number of results to return (default: 20)
+
+**Search Behavior:**
+
+The search uses intelligent matching with the following priority:
+
+1. **Exact Match (Priority 1)**: Case-sensitive exact match on company name
+2. **Partial Match (Priority 2)**: Case-insensitive partial match if no exact match found
+3. **No Results**: Returns empty array if no companies match
+
+**Examples:**
+
+- `searchTerm=Lambrk` → Returns only companies named exactly "Lambrk"
+- `searchTerm=lambrk` → Returns "Lambrk" (case-insensitive match)
+- `searchTerm=Test` → Returns companies containing "Test" (partial match)
+- `searchTerm=NonExistent` → Returns empty array
+- `status=active` → Returns only active companies
+- `limit=10` → Returns maximum 10 results
+
 **Notes:**
 
-- Returns all companies regardless of status (both active and inactive)
 - Results are sorted alphabetically by company name
+- Search is case-insensitive for partial matches
+- Status filter applies to both exact and partial searches
+- Limit parameter controls pagination
 
 **Response (200):**
 
@@ -68,11 +93,127 @@ All company endpoints require authentication.
 }
 ```
 
-**cURL:**
+**cURL Examples:**
 
 ```bash
-curl -X GET http://localhost:9400/api/companies \
+# Get all companies
+curl -X GET "http://localhost:9400/api/companies" \
   -H "Authorization: Bearer <access_token>"
+
+# Search for exact company name
+curl -X GET "http://localhost:9400/api/companies?searchTerm=Lambrk&status=active" \
+  -H "Authorization: Bearer <access_token>"
+
+# Search with case-insensitive matching
+curl -X GET "http://localhost:9400/api/companies?searchTerm=lambrk&status=active" \
+  -H "Authorization: Bearer <access_token>"
+
+# Partial search with limit
+curl -X GET "http://localhost:9400/api/companies?searchTerm=Test&limit=10" \
+  -H "Authorization: Bearer <access_token>"
+
+# Filter by status only
+curl -X GET "http://localhost:9400/api/companies?status=active&limit=20" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 1.1. Search Examples
+
+**Exact Match Search:**
+
+```bash
+curl -X GET "http://localhost:9400/api/companies?searchTerm=Lambrk&status=active" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Companies retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "a9109f65-3b35-4e5b-b293-80fba55a4b84",
+      "name": "Lambrk",
+      "code": "U74999UP2026PTC123456",
+      "description": "Company created during subscription",
+      "profileImageUrl": null,
+      "hrbpId": null,
+      "status": "active",
+      "subscriptionStatus": "trial",
+      "subscriptionEndsAt": null,
+      "createdAt": "2026-01-31T09:43:01.706Z",
+      "updatedAt": "2026-01-31T09:43:01.707Z"
+    }
+  ]
+}
+```
+
+**Case-Insensitive Search:**
+
+```bash
+curl -X GET "http://localhost:9400/api/companies?searchTerm=lambrk&status=active" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200):** Same as above (finds "Lambrk" regardless of case)
+
+**Partial Match Search:**
+
+```bash
+curl -X GET "http://localhost:9400/api/companies?searchTerm=Test&status=active" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Companies retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": [
+    {
+      "id": "f5dfdffc-e9b9-42e1-8701-e81c4711b02e",
+      "name": "Partial Test Company",
+      "code": "PARTIAL_1769873340_1234567890",
+      "status": "active",
+      "subscriptionStatus": "trial"
+    },
+    {
+      "id": "24eed2fb-13fa-4c66-aeee-17d677bd398f",
+      "name": "Test Company Ltd",
+      "code": "TESTCOMPANY_1234567890",
+      "status": "active",
+      "subscriptionStatus": "trial"
+    }
+  ]
+}
+```
+
+**No Results Found:**
+
+```bash
+curl -X GET "http://localhost:9400/api/companies?searchTerm=NonExistent&status=active" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200):**
+```json
+{
+  "header": {
+    "responseCode": 200,
+    "responseMessage": "Companies retrieved successfully",
+    "responseDetail": ""
+  },
+  "response": []
+}
 ```
 
 ---
